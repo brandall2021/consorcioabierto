@@ -84,6 +84,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/mfa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mfaSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mfaConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mfaVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mfaDisable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -648,6 +712,18 @@ export interface components {
             user: components["schemas"]["User"];
             memberships: components["schemas"]["Membership"][];
         };
+        MfaSetup: {
+            /** @description Secret TOTP */
+            secret: string;
+            /** @description URL otpauth:// para escanear con el autenticador */
+            otpauth_url: string;
+        };
+        MfaRequiredResponse: {
+            /** @enum {boolean} */
+            mfa_required: true;
+            /** @description Token de un solo propósito para /auth/mfa/verify, expira en minutos. */
+            mfa_token: string;
+        };
         Me: {
             user: components["schemas"]["User"];
             membership: components["schemas"]["Membership"];
@@ -871,14 +947,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Devuelve membresías; si hay más de una, el cliente llama a select-tenant. */
+            /** @description Devuelve membresías (o mfa_required si el usuario tiene MFA); si hay más de una, el cliente llama a select-tenant. */
             200: {
                 headers: {
                     "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthResponse"];
+                    "application/json": components["schemas"]["AuthResponse"] | components["schemas"]["MfaRequiredResponse"];
                 };
             };
             401: components["responses"]["Problem"];
@@ -948,6 +1024,105 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    mfaSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Genera un secret TOTP y devuelve la URL otpauth para el QR. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaSetup"];
+                };
+            };
+            401: components["responses"]["Problem"];
+        };
+    };
+    mfaConfirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Código TOTP de 6 dígitos */
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description MFA habilitado. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+        };
+    };
+    mfaVerify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Token de un solo propósito emitido por /auth/login */
+                    mfa_token: string;
+                    /** @description Código TOTP de 6 dígitos */
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Segundo factor válido; emite refresh + access. */
+            200: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            401: components["responses"]["Problem"];
+            429: components["responses"]["Problem"];
+        };
+    };
+    mfaDisable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description MFA deshabilitado. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Problem"];
         };
     };
     me: {

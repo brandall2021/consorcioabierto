@@ -213,6 +213,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Membership"
+    MfaSetup:
+      type: object
+      required: [secret, otpauth_url]
+      properties:
+        secret: { type: string, description: Secret TOTP, se muestra una sola vez }
+        otpauth_url: { type: string, description: URL otpauth:// para escanear con el autenticador }
+    MfaRequiredResponse:
+      type: object
+      required: [mfa_required, mfa_token]
+      properties:
+        mfa_required: { type: boolean, enum: [true] }
+        mfa_token:
+          type: string
+          description: Token de un solo propósito para /auth/mfa/verify, expira en minutos.
     Me:
       type: object
       required: [user, membership, permissions]
@@ -416,13 +430,15 @@ paths:
                 password: { type: string }
       responses:
         "200":
-          description: Devuelve membresías; si hay más de una, el cliente llama a select-tenant.
+          description: Devuelve membresías (o mfa_required si el usuario tiene MFA); si hay más de una, el cliente llama a select-tenant.
           headers:
             Set-Cookie: { schema: { type: string } }
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/AuthResponse"
+                  - $ref: "#/components/schemas/MfaRequiredResponse"
         "401": { $ref: "#/components/responses/Problem" }
         "429": { $ref: "#/components/responses/Problem" }
   /auth/select-tenant:
@@ -463,6 +479,76 @@ paths:
       tags: [auth]
       responses:
         "204": { description: Revoca refresh y sesión. }
+  /auth/mfa/setup:
+    post:
+      operationId: mfaSetup
+      tags: [auth]
+      security:
+        - cookieAuth: []
+          bearerAuth: []
+      responses:
+        "200":
+          description: Genera un secret TOTP y devuelve la URL otpauth para el QR.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaSetup"
+        "401": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/confirm:
+    post:
+      operationId: mfaConfirm
+      tags: [auth]
+      security:
+        - cookieAuth: []
+          bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, description: Código TOTP de 6 dígitos }
+      responses:
+        "204": { description: MFA habilitado. }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/verify:
+    post:
+      operationId: mfaVerify
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mfa_token, code]
+              properties:
+                mfa_token: { type: string, description: Token de un solo propósito emitido por /auth/login }
+                code: { type: string, description: Código TOTP de 6 dígitos }
+      responses:
+        "200":
+          description: Segundo factor válido; emite refresh + access.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/mfa/disable:
+    post:
+      operationId: mfaDisable
+      tags: [auth]
+      security:
+        - cookieAuth: []
+          bearerAuth: []
+      responses:
+        "204": { description: MFA deshabilitado. }
+        "401": { $ref: "#/components/responses/Problem" }
   /me:
     get:
       operationId: me

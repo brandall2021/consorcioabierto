@@ -10,6 +10,10 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 	r.Post("/auth/select-tenant", h.SelectTenant)
 	r.Post("/auth/refresh", h.Refresh)
 	r.Post("/auth/logout", h.Logout)
+	r.Post("/auth/mfa/setup", h.MfaSetup)
+	r.Post("/auth/mfa/confirm", h.MfaConfirm)
+	r.Post("/auth/mfa/verify", h.MfaVerify)
+	r.Post("/auth/mfa/disable", h.MfaDisable)
 	r.Get("/me", h.Me)
 	r.Get("/memberships", h.Memberships)
 }

@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const disableMfa = `-- name: DisableMfa :exec
+UPDATE users
+SET mfa_enabled = FALSE, mfa_secret = NULL, updated_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DisableMfa(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, disableMfa, id)
+	return err
+}
+
+const enableMfa = `-- name: EnableMfa :exec
+UPDATE users
+SET mfa_enabled = TRUE, updated_at = now()
+WHERE id = $1 AND mfa_secret IS NOT NULL
+`
+
+func (q *Queries) EnableMfa(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, enableMfa, id)
+	return err
+}
+
 const getSessionByID = `-- name: GetSessionByID :one
 SELECT id, user_id, membership_id, session_key, expires_at, revoked_at, created_at, last_used_at
 FROM sessions
@@ -34,8 +56,7 @@ func (q *Queries) GetSessionByID(ctx context.Context, id pgtype.UUID) (Session, 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at
-FROM users
+SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at, mfa_secret FROM users
 WHERE email_normalized = $1
 `
 
@@ -51,13 +72,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, emailNormalized string) (U
 		&i.MfaEnabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MfaSecret,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at
-FROM users
+SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at, mfa_secret FROM users
 WHERE id = $1
 `
 
@@ -73,6 +94,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.MfaEnabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MfaSecret,
 	)
 	return i, err
 }
@@ -296,5 +318,21 @@ type RevokeTokensByFamilyParams struct {
 
 func (q *Queries) RevokeTokensByFamily(ctx context.Context, arg RevokeTokensByFamilyParams) error {
 	_, err := q.db.Exec(ctx, revokeTokensByFamily, arg.FamilyID, arg.RevokedAt)
+	return err
+}
+
+const updateMfaSecret = `-- name: UpdateMfaSecret :exec
+UPDATE users
+SET mfa_secret = $2, updated_at = now()
+WHERE id = $1
+`
+
+type UpdateMfaSecretParams struct {
+	ID        pgtype.UUID `json:"id"`
+	MfaSecret pgtype.Text `json:"mfa_secret"`
+}
+
+func (q *Queries) UpdateMfaSecret(ctx context.Context, arg UpdateMfaSecretParams) error {
+	_, err := q.db.Exec(ctx, updateMfaSecret, arg.ID, arg.MfaSecret)
 	return err
 }

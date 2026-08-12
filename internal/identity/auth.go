@@ -22,7 +22,6 @@ import (
 var (
 	ErrInvalidCredentials  = errors.New("credenciales inválidas")
 	ErrUserDisabled        = errors.New("usuario deshabilitado")
-	ErrMFANotVerified      = errors.New("verificación MFA pendiente")
 	ErrTooManyAttempts     = errors.New("demasiados intentos fallidos")
 	ErrInvalidRefreshToken = errors.New("refresh token inválido")
 	ErrRefreshTokenExpired = errors.New("refresh token expirado")
@@ -60,31 +59,37 @@ type Me struct {
 
 // LoginResult es lo que devuelve Login. AccessToken se emite solo cuando hay
 // una única membresía activa; con varias, el cliente llama select-tenant.
+// Con MFA habilitado se devuelve MfaRequired + MfaToken para completar con
+// VerifyMfa (no se abre sesión aún).
 type LoginResult struct {
 	User         User
 	Memberships  []Membership
 	RefreshToken string
 	AccessToken  string
+	MfaRequired  bool
+	MfaToken     string
 }
 
 // AuthManager implementa el flujo de identidad: login con Argon2id, sesiones,
 // refresh tokens con rotación por familia y access token JWT RS256.
 type AuthManager struct {
-	cfg  *config.Config
-	key  *rsa.PrivateKey
-	pool *pgxpool.Pool
-	q    *db.Queries
-	now  func() time.Time
+	cfg      *config.Config
+	key      *rsa.PrivateKey
+	pool     *pgxpool.Pool
+	q        *db.Queries
+	attempts *attemptRecorder
+	now      func() time.Time
 }
 
 // NewAuthManager crea el gestor de identidad.
 func NewAuthManager(cfg *config.Config, key *rsa.PrivateKey, pool *pgxpool.Pool) *AuthManager {
 	return &AuthManager{
-		cfg:  cfg,
-		key:  key,
-		pool: pool,
-		q:    db.New(pool),
-		now:  time.Now,
+		cfg:      cfg,
+		key:      key,
+		pool:     pool,
+		q:        db.New(pool),
+		attempts: &attemptRecorder{pool: pool, now: time.Now},
+		now:      time.Now,
 	}
 }
 
@@ -130,11 +135,27 @@ func newRefreshToken() (plain, hash string, err error) {
 	return plain, refreshHash(plain), nil
 }
 
-// Login valida credenciales, registra la sesión y emite refresh token.
-func (am *AuthManager) Login(ctx context.Context, email, password string) (*LoginResult, error) {
-	user, err := am.q.GetUserByEmail(ctx, strings.ToLower(strings.TrimSpace(email)))
+// Login valida credenciales (con límite de intentos por email+IP), registra la
+// sesión y emite refresh token. Si el usuario tiene MFA habilitado, devuelve un
+// mfa_token de corta vida y NO abre sesión: el segundo factor se valida en
+// VerifyMfa. La IP se usa solo para el contador de intentos, nunca se registra
+// el email en logs.
+func (am *AuthManager) Login(ctx context.Context, email, password, ip string) (*LoginResult, error) {
+	normalized := strings.ToLower(strings.TrimSpace(email))
+
+	failures, err := am.attempts.countFailures(ctx, normalized, ip, am.cfg.LoginAttemptWindow)
+	if err != nil {
+		return nil, err
+	}
+	if failures >= int64(am.cfg.LoginMaxAttempts) {
+		return nil, ErrTooManyAttempts
+	}
+
+	user, err := am.q.GetUserByEmail(ctx, normalized)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			// Mismo código de error para no filtrar existencia de cuentas.
+			_ = am.attempts.record(ctx, normalized, ip, "password", false)
 			return nil, ErrInvalidCredentials
 		}
 		return nil, err
@@ -148,10 +169,19 @@ func (am *AuthManager) Login(ctx context.Context, email, password string) (*Logi
 		return nil, err
 	}
 	if !ok {
+		_ = am.attempts.record(ctx, normalized, ip, "password", false)
 		return nil, ErrInvalidCredentials
 	}
+	if err := am.attempts.record(ctx, normalized, ip, "password", true); err != nil {
+		return nil, err
+	}
+
 	if user.MfaEnabled {
-		return nil, ErrMFANotVerified
+		token, err := am.signMfaToken(user.ID.String())
+		if err != nil {
+			return nil, err
+		}
+		return &LoginResult{User: userDTO(user), MfaRequired: true, MfaToken: token}, nil
 	}
 
 	return am.openSession(ctx, user)

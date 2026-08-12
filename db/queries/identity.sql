@@ -1,11 +1,24 @@
 -- name: GetUserByEmail :one
-SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at
-FROM users
+SELECT * FROM users
 WHERE email_normalized = $1;
 
 -- name: GetUserByID :one
-SELECT id, email_normalized, password_hash, name, status, mfa_enabled, created_at, updated_at
-FROM users
+SELECT * FROM users
+WHERE id = $1;
+
+-- name: UpdateMfaSecret :exec
+UPDATE users
+SET mfa_secret = $2, updated_at = now()
+WHERE id = $1;
+
+-- name: EnableMfa :exec
+UPDATE users
+SET mfa_enabled = TRUE, updated_at = now()
+WHERE id = $1 AND mfa_secret IS NOT NULL;
+
+-- name: DisableMfa :exec
+UPDATE users
+SET mfa_enabled = FALSE, mfa_secret = NULL, updated_at = now()
 WHERE id = $1;
 
 -- name: ListMembershipsForUser :many

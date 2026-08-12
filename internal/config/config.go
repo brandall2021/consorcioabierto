@@ -19,10 +19,12 @@ type Config struct {
 	DatabaseURL      string
 	DatabaseURLAdmin string
 
-	AccessTokenTTL   time.Duration
-	RefreshTokenTTL  time.Duration
-	LoginMaxAttempts int
-	JWTPrivateKey    string
+	AccessTokenTTL     time.Duration
+	RefreshTokenTTL    time.Duration
+	MFATokenTTL        time.Duration
+	LoginMaxAttempts   int
+	LoginAttemptWindow time.Duration
+	JWTPrivateKey      string
 
 	StorageDriver string
 	MailDriver    string
@@ -39,10 +41,12 @@ func Load() (*Config, error) {
 		RequestTimeout:   getDuration("APP_REQUEST_TIMEOUT", 30*time.Second),
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
 		DatabaseURLAdmin: os.Getenv("DATABASE_URL_ADMIN"),
-		AccessTokenTTL:   getDuration("ACCESS_TOKEN_TTL", 10*time.Minute),
-		RefreshTokenTTL:  getDuration("REFRESH_TOKEN_TTL", 720*time.Hour),
-		LoginMaxAttempts: getInt("LOGIN_MAX_ATTEMPTS", 5),
-		JWTPrivateKey:    os.Getenv("JWT_PRIVATE_KEY"),
+		AccessTokenTTL:     getDuration("ACCESS_TOKEN_TTL", 10*time.Minute),
+		RefreshTokenTTL:    getDuration("REFRESH_TOKEN_TTL", 720*time.Hour),
+		MFATokenTTL:        getDuration("MFA_TOKEN_TTL", 5*time.Minute),
+		LoginMaxAttempts:   getInt("LOGIN_MAX_ATTEMPTS", 5),
+		LoginAttemptWindow: getDuration("LOGIN_ATTEMPT_WINDOW", 15*time.Minute),
+		JWTPrivateKey:      os.Getenv("JWT_PRIVATE_KEY"),
 		StorageDriver:    getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:       getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:        getenv("PSP_DRIVER", "mock"),

@@ -21,6 +21,7 @@ type Claims struct {
 	Subject    string   `json:"sub"`
 	IssuedAt   int64    `json:"iat"`
 	ExpiresAt  int64    `json:"exp"`
+	Purpose    string   `json:"purpose,omitempty"`
 	Email      string   `json:"email"`
 	Name       string   `json:"name"`
 	Membership string   `json:"membership_id,omitempty"`

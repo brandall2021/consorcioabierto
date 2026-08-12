@@ -34,6 +34,15 @@ type IdempotencyKey struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type LoginAttempt struct {
+	ID              pgtype.UUID        `json:"id"`
+	EmailNormalized string             `json:"email_normalized"`
+	Ip              string             `json:"ip"`
+	Source          string             `json:"source"`
+	Success         bool               `json:"success"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
 type Membership struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -105,4 +114,5 @@ type User struct {
 	MfaEnabled      bool               `json:"mfa_enabled"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	MfaSecret       pgtype.Text        `json:"mfa_secret"`
 }
