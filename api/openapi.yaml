@@ -1,0 +1,1203 @@
+openapi: 3.1.0
+info:
+  title: ConsorcioAbierto API
+  version: 0.1.0
+  description: |
+    API del SaaS multi-tenant de administración de consorcios.
+    Contrato de Fase 0. Convenciones: JSON snake_case, fechas ISO 8601,
+    importes como enteros `*_cents` + `currency`, IDs UUID.
+    Errores RFC 9457 (application/problem+json).
+servers:
+  - url: /api/v1
+security:
+  - cookieAuth: []
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Host-ca_session
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RequestId:
+      name: X-Request-ID
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: ID idempotente de trazabilidad (se devuelve en respuesta).
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks.
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema:
+        type: string
+        description: Versión esperada del recurso (ETag) para mutaciones concurrentes.
+    ConsorcioId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UnidadId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ImportJobId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    LiquidacionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CobranzaId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DocumentoId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ComunicadoId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ReclamoId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  headers:
+    RequestIdOut:
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Problem:
+      description: Error RFC 9457.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amount_cents, currency]
+      properties:
+        amount_cents:
+          type: integer
+          format: int64
+          description: Importe en centavos (nunca float).
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          default: ARS
+    ErrorField:
+      type: object
+      required: [field, code]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+    Problem:
+      type: object
+      required: [type, title, status, code, detail, instance, request_id]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        instance:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorField"
+    Page:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          required: [request_id]
+          properties:
+            request_id:
+              type: string
+              format: uuid
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Cursor:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          required: [request_id, next_cursor]
+          properties:
+            request_id:
+              type: string
+              format: uuid
+            next_cursor:
+              type: [string, "null"]
+    User:
+      type: object
+      required: [id, email, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        status: { type: string }
+        mfa_enabled: { type: boolean }
+    Membership:
+      type: object
+      required: [id, tenant_id, tenant_name, roles]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        tenant_status: { type: string }
+        roles:
+          type: array
+          items:
+            type: string
+        scopes:
+          type: array
+          items:
+            type: string
+    AuthResponse:
+      type: object
+      required: [user, memberships]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/Membership"
+    Me:
+      type: object
+      required: [user, membership, permissions]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        membership:
+          $ref: "#/components/schemas/Membership"
+        permissions:
+          type: array
+          items:
+            type: string
+    Consorcio:
+      type: object
+      required: [id, tenant_id, nombre, estado]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        nombre: { type: string }
+        cuit: { type: [string, "null"] }
+        domicilio: { type: [string, "null"] }
+        tipo: { type: string }
+        estado: { type: string }
+        created_at: { type: string, format: date-time }
+    ConsorcioInput:
+      type: object
+      additionalProperties: false
+      required: [nombre]
+      properties:
+        nombre: { type: string, maxLength: 200 }
+        cuit: { type: [string, "null"], pattern: "^[0-9]{11}$" }
+        domicilio: { type: [string, "null"], maxLength: 300 }
+        tipo:
+          type: string
+          enum: [edificio, barrio, complejo, otros]
+    Unidad:
+      type: object
+      required: [id, consorcio_id, codigo, tipo, coeficiente, estado]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        codigo: { type: string }
+        tipo: { type: string }
+        superficie: { type: [number, "null"] }
+        coeficiente:
+          type: string
+          description: NUMERIC(12,8), >= 0
+        estado: { type: string }
+    UnidadInput:
+      type: object
+      additionalProperties: false
+      required: [codigo, tipo]
+      properties:
+        codigo: { type: string, maxLength: 50 }
+        tipo:
+          type: string
+          enum: [departamento, cochera, local, unidad_edificio, otros]
+        superficie: { type: [number, "null"], minimum: 0 }
+        coeficiente:
+          type: string
+          pattern: "^([0-9]+(\\.[0-9]{1,8})?|0)$"
+    ImportJob:
+      type: object
+      required: [id, estado]
+      properties:
+        id: { type: string, format: uuid }
+        estado:
+          type: string
+          enum: [validando, listo, confirmando, procesado, fallido]
+        total_filas: { type: integer }
+        creados: { type: integer }
+        actualizados: { type: integer }
+        rechazados: { type: integer }
+        errores:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportError"
+        archivo_errores_url: { type: [string, "null"] }
+    ImportError:
+      type: object
+      required: [fila, campos]
+      properties:
+        fila: { type: integer }
+        campos:
+          type: array
+          items:
+            type: object
+            required: [campo, error]
+            properties:
+              campo: { type: string }
+              error: { type: string }
+    Liquidacion:
+      type: object
+      required: [id, consorcio_id, periodo, estado, version]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        periodo: { type: string, pattern: "^[0-9]{6}$", description: "YYYYMM" }
+        vencimiento_1: { type: string, format: date }
+        vencimiento_2: { type: [string, "null"], format: date }
+        estado:
+          type: string
+          enum: [borrador, calculada, confirmada, publicada, cerrada, anulada]
+        version: { type: integer }
+        total_gastos_cents: { type: integer, format: int64 }
+        total_distribuido_cents: { type: integer, format: int64 }
+        unidades_alcanzadas: { type: integer }
+        created_at: { type: string, format: date-time }
+    Gasto:
+      type: object
+      required: [id, concepto, importe, fecha, estado]
+      properties:
+        id: { type: string, format: uuid }
+        proveedor_id: { type: [string, "null"], format: uuid }
+        comprobante: { type: [string, "null"] }
+        concepto: { type: string }
+        importe: { $ref: "#/components/schemas/Money" }
+        fecha: { type: string, format: date }
+        estado: { type: string }
+        documento_id: { type: [string, "null"], format: uuid }
+    Proveedor:
+      type: object
+      required: [id, cuit, razon_social, estado]
+      properties:
+        id: { type: string, format: uuid }
+        cuit: { type: string }
+        razon_social: { type: string }
+        contacto_nombre: { type: [string, "null"] }
+        contacto_email: { type: [string, "null"], format: email }
+        estado: { type: string }
+    Cobranza:
+      type: object
+      required: [id, unidad_id, fecha, importe, estado]
+      properties:
+        id: { type: string, format: uuid }
+        unidad_id: { type: string, format: uuid }
+        fecha: { type: string, format: date }
+        canal: { type: string }
+        importe: { $ref: "#/components/schemas/Money" }
+        referencia: { type: [string, "null"] }
+        estado:
+          type: string
+          enum: [pendiente_revision, acreditado, rechazado, revertido]
+    Reclamo:
+      type: object
+      required: [id, unidad_id, categoria, estado]
+      properties:
+        id: { type: string, format: uuid }
+        unidad_id: { type: string, format: uuid }
+        categoria: { type: string }
+        estado:
+          type: string
+          enum: [abierto, en_progreso, resuelto, cerrado]
+        responsable_id: { type: [string, "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+    Comunicado:
+      type: object
+      required: [id, titulo, estado]
+      properties:
+        id: { type: string, format: uuid }
+        titulo: { type: string }
+        estado:
+          type: string
+          enum: [borrador, publicado]
+        destinatarios: { type: integer }
+    DocumentDownload:
+      type: object
+      required: [url, expires_at]
+      properties:
+        url: { type: string, format: uri }
+        expires_at: { type: string, format: date-time }
+
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Devuelve membresías; si hay más de una, el cliente llama a select-tenant.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/select-tenant:
+    post:
+      operationId: selectTenant
+      tags: [auth]
+      security:
+        - cookieAuth: []
+          bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [membership_id]
+              properties:
+                membership_id: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Emite access token contextual a la membresía elegida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "403": { $ref: "#/components/responses/Problem" }
+  /auth/refresh:
+    post:
+      operationId: refresh
+      tags: [auth]
+      responses:
+        "200":
+          description: Rota refresh y emite nuevo access token.
+        "401": { $ref: "#/components/responses/Problem" }
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      responses:
+        "204": { description: Revoca refresh y sesión. }
+  /me:
+    get:
+      operationId: me
+      tags: [auth]
+      responses:
+        "200":
+          description: Usuario + membresía activa + permisos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401": { $ref: "#/components/responses/Problem" }
+  /memberships:
+    get:
+      operationId: listMemberships
+      tags: [auth]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+
+  /consorcios:
+    get:
+      operationId: listConsorcios
+      tags: [consorcios]
+      security:
+        - cookieAuth: []
+          bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: estado
+          in: query
+          schema: { type: string }
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Lista de consorcios del tenant activo.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestIdOut"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+        "403": { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createConsorcio
+      tags: [consorcios]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsorcioInput"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consorcio"
+        "409": { $ref: "#/components/responses/Problem" }
+  /consorcios/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: getConsorcio
+      tags: [consorcios]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consorcio"
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: updateConsorcio
+      tags: [consorcios]
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsorcioInput"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consorcio"
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /consorcios/{id}/unidades:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listUnidades
+      tags: [unidades]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createUnidad
+      tags: [unidades]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnidadInput"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unidad"
+        "409":
+          description: Código duplicado en el consorcio.
+          $ref: "#/components/responses/Problem"
+  /consorcios/{id}/unidades/import-jobs:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    post:
+      operationId: createImportJob
+      tags: [importacion]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo, modo]
+              properties:
+                archivo: { type: string, format: binary }
+                modo:
+                  type: string
+                  enum: [crear, actualizar, crear_y_actualizar]
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+        "422": { $ref: "#/components/responses/Problem" }
+  /import-jobs/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ImportJobId" }
+    get:
+      operationId: getImportJob
+      tags: [importacion]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+  /import-jobs/{id}/confirm:
+    parameters:
+      - { $ref: "#/components/parameters/ImportJobId" }
+    post:
+      operationId: confirmImportJob
+      tags: [importacion]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportJob"
+
+  /consorcios/{id}/liquidaciones:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listLiquidaciones
+      tags: [expensas]
+      parameters:
+        - name: periodo
+          in: query
+          schema: { type: string, pattern: "^[0-9]{6}$" }
+        - name: estado
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createLiquidacion
+      tags: [expensas]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [periodo, vencimiento_1]
+              properties:
+                periodo: { type: string, pattern: "^[0-9]{6}$" }
+                vencimiento_1: { type: string, format: date }
+                vencimiento_2: { type: [string, "null"], format: date }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+        "409": { $ref: "#/components/responses/Problem" }
+  /liquidaciones/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/LiquidacionId" }
+    get:
+      operationId: getLiquidacion
+      tags: [expensas]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+    patch:
+      operationId: updateLiquidacion
+      tags: [expensas]
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vencimiento_1: { type: string, format: date }
+                vencimiento_2: { type: [string, "null"], format: date }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+        "409": { $ref: "#/components/responses/Problem" }
+  /liquidaciones/{id}/calcular:
+    parameters:
+      - { $ref: "#/components/parameters/LiquidacionId" }
+    post:
+      operationId: calcularLiquidacion
+      tags: [expensas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Preview reproducible con advertencias.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_gastos_cents: { type: integer, format: int64 }
+                  total_distribuido_cents: { type: integer, format: int64 }
+                  diferencia_cents: { type: integer, format: int64 }
+                  coeficiente_total: { type: string }
+                  unidades_alcanzadas: { type: integer }
+                  advertencias:
+                    type: array
+                    items: { type: string }
+                  unidades:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        codigo_uf: { type: string }
+                        total_cents: { type: integer, format: int64 }
+        "409": { $ref: "#/components/responses/Problem" }
+  /liquidaciones/{id}/confirmar:
+    parameters:
+      - { $ref: "#/components/parameters/LiquidacionId" }
+    post:
+      operationId: confirmarLiquidacion
+      tags: [expensas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_version]
+              properties:
+                expected_version: { type: integer }
+      responses:
+        "200":
+          description: Congela snapshot y genera cargos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+        "409": { $ref: "#/components/responses/Problem" }
+  /liquidaciones/{id}/publicar:
+    parameters:
+      - { $ref: "#/components/parameters/LiquidacionId" }
+    post:
+      operationId: publicarLiquidacion
+      tags: [expensas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Documentos generados y notificaciones encoladas por el worker.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+        "409": { $ref: "#/components/responses/Problem" }
+  /liquidaciones/{id}/anular:
+    parameters:
+      - { $ref: "#/components/parameters/LiquidacionId" }
+    post:
+      operationId: anularLiquidacion
+      tags: [expensas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo: { type: string, minLength: 10 }
+      responses:
+        "200":
+          description: Asientos compensatorios generados; nada se borra.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liquidacion"
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /consorcios/{id}/gastos:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listGastos
+      tags: [gastos]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createGasto
+      tags: [gastos]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [concepto, importe, fecha]
+              properties:
+                proveedor_id: { type: [string, "null"], format: uuid }
+                comprobante: { type: [string, "null"] }
+                concepto: { type: string }
+                importe: { $ref: "#/components/schemas/Money" }
+                fecha: { type: string, format: date }
+                documento_id: { type: [string, "null"], format: uuid }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gasto"
+        "422": { $ref: "#/components/responses/Problem" }
+  /consorcios/{id}/proveedores:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listProveedores
+      tags: [proveedores]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createProveedor
+      tags: [proveedores]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cuit, razon_social]
+              properties:
+                cuit: { type: string, pattern: "^[0-9]{11}$" }
+                razon_social: { type: string }
+                contacto_nombre: { type: [string, "null"] }
+                contacto_email: { type: [string, "null"], format: email }
+                contacto_telefono: { type: [string, "null"] }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Proveedor"
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /unidades/{id}/cuenta-corriente:
+    parameters:
+      - { $ref: "#/components/parameters/UnidadId" }
+    get:
+      operationId: getCuentaCorriente
+      tags: [cobranzas]
+      responses:
+        "200":
+          description: Movimientos y saldo reconstruido de la UF.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saldo_cents: { type: integer, format: int64 }
+                  saldo_a_favor_cents: { type: integer, format: int64 }
+                  movimientos:
+                    $ref: "#/components/schemas/Cursor"
+  /consorcios/{id}/cobranzas:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listCobranzas
+      tags: [cobranzas]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createCobranza
+      tags: [cobranzas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unidad_id, fecha, importe]
+              properties:
+                unidad_id: { type: string, format: uuid }
+                fecha: { type: string, format: date }
+                canal:
+                  type: string
+                  enum: [efectivo, transferencia, deposito, tarjeta, cajero, otros]
+                importe: { $ref: "#/components/schemas/Money" }
+                referencia: { type: [string, "null"] }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cobranza"
+        "409":
+          description: Referencia duplicada; requiere resolución.
+          $ref: "#/components/responses/Problem"
+  /cobranzas/{id}/acreditar:
+    parameters:
+      - { $ref: "#/components/parameters/CobranzaId" }
+    post:
+      operationId: acreditarCobranza
+      tags: [cobranzas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asignaciones:
+                  description: Opcional; si se omite, el backend propone FIFO.
+                  type: array
+                  items:
+                    type: object
+                    required: [charge_id, amount_cents]
+                    properties:
+                      charge_id: { type: string, format: uuid }
+                      amount_cents: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Pago acreditado con asignaciones y saldo resultante.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cobranza:
+                    $ref: "#/components/schemas/Cobranza"
+                  asignaciones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        charge_id: { type: string, format: uuid }
+                        amount_cents: { type: integer, format: int64 }
+                  saldo_a_favor_cents: { type: integer, format: int64 }
+        "409": { $ref: "#/components/responses/Problem" }
+  /cobranzas/{id}/asignaciones:
+    parameters:
+      - { $ref: "#/components/parameters/CobranzaId" }
+    post:
+      operationId: ajustarAsignaciones
+      tags: [cobranzas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [asignaciones]
+              properties:
+                asignaciones:
+                  type: array
+                  items:
+                    type: object
+                    required: [charge_id, amount_cents]
+                    properties:
+                      charge_id: { type: string, format: uuid }
+                      amount_cents: { type: integer, format: int64 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /documentos/{id}/download-url:
+    parameters:
+      - { $ref: "#/components/parameters/DocumentoId" }
+    get:
+      operationId: getDocumentDownloadUrl
+      tags: [documentos]
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: URL firmada breve, emitida solo tras autorizar el recurso.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentDownload"
+        "403": { $ref: "#/components/responses/Problem" }
+  /document-upload-intents:
+    post:
+      operationId: createDocumentUploadIntent
+      tags: [documentos]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, nombre, size_bytes, sha256]
+              properties:
+                tipo: { type: string }
+                nombre: { type: string }
+                size_bytes: { type: integer, format: int64 }
+                sha256: { type: string }
+                owner_type: { type: string }
+                owner_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Intento con URL firmada de subida y documento_id.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documento_id: { type: string, format: uuid }
+                  upload_url: { type: string, format: uri }
+        "413": { $ref: "#/components/responses/Problem" }
+
+  /consorcios/{id}/comunicados:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listComunicados
+      tags: [comunicaciones]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createComunicado
+      tags: [comunicaciones]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, cuerpo]
+              properties:
+                titulo: { type: string }
+                cuerpo: { type: string }
+                destinatarios:
+                  type: string
+                  enum: [todos, unidades]
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comunicado"
+  /comunicados/{id}/publicar:
+    parameters:
+      - { $ref: "#/components/parameters/ComunicadoId" }
+    post:
+      operationId: publicarComunicado
+      tags: [comunicaciones]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Envíos encolados en el worker.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comunicado"
+
+  /consorcios/{id}/reclamos:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listReclamos
+      tags: [reclamos]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createReclamo
+      tags: [reclamos]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unidad_id, categoria, texto]
+              properties:
+                unidad_id: { type: string, format: uuid }
+                categoria: { type: string }
+                texto: { type: string, minLength: 3 }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reclamo"
+        "403": { $ref: "#/components/responses/Problem" }
+  /reclamos/{id}/mensajes:
+    parameters:
+      - { $ref: "#/components/parameters/ReclamoId" }
+    post:
+      operationId: addReclamoMensaje
+      tags: [reclamos]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, minLength: 1 }
+                adjunto_id: { type: [string, "null"], format: uuid }
+      responses:
+        "201": { description: Mensaje agregado. }
+  /reclamos/{id}/transiciones:
+    parameters:
+      - { $ref: "#/components/parameters/ReclamoId" }
+    post:
+      operationId: transicionReclamo
+      tags: [reclamos]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion, motivo]
+              properties:
+                accion:
+                  type: string
+                  enum: [asignar, en_progreso, resolver, cerrar, reabrir]
+                motivo: { type: [string, "null"] }
+                responsable_id: { type: [string, "null"], format: uuid }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reclamo"
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+      tags: [auditoria]
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: accion
+          in: query
+          schema: { type: string }
+        - name: recurso_type
+          in: query
+          schema: { type: string }
+        - name: desde
+          in: query
+          schema: { type: string, format: date-time }
+        - name: hasta
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Auditoría append-only paginada por cursor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cursor"
