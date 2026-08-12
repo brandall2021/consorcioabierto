@@ -13,6 +13,7 @@ import (
 
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
+	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
 	"github.com/brandall2021/consorcioabierto/internal/server"
 )
@@ -34,23 +35,27 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	var dbURL string
-	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		dbURL = cfg.DatabaseURLAdmin
-	} else {
-		dbURL = cfg.DatabaseURL
-	}
-
-	pool, err := database.Connect(ctx, dbURL)
+	pool, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Error("base de datos", "error", err)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
+	identityManager := identity.NewAuthManager(cfg, nil, pool)
+	if keyPem := []byte(cfg.JWTPrivateKey); len(keyPem) > 0 {
+		privateKey, err := identity.ParseRSAPrivateKeyFromPEM(keyPem)
+		if err != nil {
+			log.Error("clave privada JWT inválida", "error", err)
+			os.Exit(1)
+		}
+		identityManager = identity.NewAuthManager(cfg, privateKey, pool)
+	}
+
+	r := server.New(log, cfg.Env, identityManager)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           server.New(log, cfg.Env),
+		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -87,13 +92,7 @@ func runMigrate(log *slog.Logger, args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	var dbURL string
-	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		dbURL = cfg.DatabaseURLAdmin
-	} else {
-		dbURL = cfg.DatabaseURL
-	}
-
+	dbURL := cfg.DatabaseURLAdmin
 	dir := "db/migrations"
 	switch args[0] {
 	case "up":

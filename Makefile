@@ -23,6 +23,13 @@ migrate-up:    ## Aplica migraciones (goose)
 migrate-down:  ## Revierte una migración
 	go run ./apps/api migrate down 1
 
+dev-key:       ## Genera clave privada JWT de desarrollo (PKCS8 PEM)
+	mkdir -p deploy/keys
+	openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out deploy/keys/jwt_private_dev.pem 2>/dev/null
+	openssl pkcs8 -topk8 -nocrypt -in deploy/keys/jwt_private_dev.pem -out deploy/keys/jwt_private_dev.pem.tmp 2>/dev/null
+	mv deploy/keys/jwt_private_dev.pem.tmp deploy/keys/jwt_private_dev.pem
+	@echo "Clave generada en deploy/keys/jwt_private_dev.pem"
+
 api:           ## Ejecuta el API en modo desarrollo
 	go run ./apps/api
 

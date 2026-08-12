@@ -4,38 +4,48 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 // Config concentra las variables de entorno del proceso (apps/api y apps/worker).
 type Config struct {
-	Env             string
-	LogFormat       string
-	HTTPAddr        string
-	BaseURL         string
-	RequestTimeout  time.Duration
-	DatabaseURL     string
+	Env              string
+	LogFormat        string
+	HTTPAddr         string
+	BaseURL          string
+	RequestTimeout   time.Duration
+	DatabaseURL      string
 	DatabaseURLAdmin string
 
-	StorageDriver   string
-	MailDriver      string
-	PSPDriver       string
+	AccessTokenTTL   time.Duration
+	RefreshTokenTTL  time.Duration
+	LoginMaxAttempts int
+	JWTPrivateKey    string
+
+	StorageDriver string
+	MailDriver    string
+	PSPDriver     string
 }
 
 // Load lee la configuración y la valida.
 func Load() (*Config, error) {
 	cfg := &Config{
-		Env:            getenv("APP_ENV", "local"),
-		LogFormat:      getenv("LOG_FORMAT", "json"),
-		HTTPAddr:       getenv("APP_HTTP_ADDR", ":8080"),
-		BaseURL:        getenv("APP_BASE_URL", "http://localhost:8080"),
-		RequestTimeout: getDuration("APP_REQUEST_TIMEOUT", 30*time.Second),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		Env:              getenv("APP_ENV", "local"),
+		LogFormat:        getenv("LOG_FORMAT", "json"),
+		HTTPAddr:         getenv("APP_HTTP_ADDR", ":8080"),
+		BaseURL:          getenv("APP_BASE_URL", "http://localhost:8080"),
+		RequestTimeout:   getDuration("APP_REQUEST_TIMEOUT", 30*time.Second),
+		DatabaseURL:      os.Getenv("DATABASE_URL"),
 		DatabaseURLAdmin: os.Getenv("DATABASE_URL_ADMIN"),
-		StorageDriver:  getenv("STORAGE_DRIVER", "minio"),
-		MailDriver:     getenv("MAIL_DRIVER", "mailpit"),
-		PSPDriver:      getenv("PSP_DRIVER", "mock"),
+		AccessTokenTTL:   getDuration("ACCESS_TOKEN_TTL", 10*time.Minute),
+		RefreshTokenTTL:  getDuration("REFRESH_TOKEN_TTL", 720*time.Hour),
+		LoginMaxAttempts: getInt("LOGIN_MAX_ATTEMPTS", 5),
+		JWTPrivateKey:    os.Getenv("JWT_PRIVATE_KEY"),
+		StorageDriver:    getenv("STORAGE_DRIVER", "minio"),
+		MailDriver:       getenv("MAIL_DRIVER", "mailpit"),
+		PSPDriver:        getenv("PSP_DRIVER", "mock"),
 	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -74,6 +84,15 @@ func getDuration(key string, def time.Duration) time.Duration {
 	if v := os.Getenv(key); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			return d
+		}
+	}
+	return def
+}
+
+func getInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
 		}
 	}
 	return def

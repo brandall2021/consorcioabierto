@@ -25,7 +25,7 @@ ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
 CREATE POLICY refresh_tokens_visible ON refresh_tokens FOR SELECT USING (user_id = app.current_user_id());
 
 ALTER TABLE idempotency_keys ENABLE ROW LEVEL SECURITY;
-CREATE POLICY idempotency_visible ON idempotency_keys FOR SELECT USING (tenant_id = app.current_tenant_id()) WITH CHECK (tenant_id = app.current_tenant_id());
+CREATE POLICY idempotency_visible ON idempotency_keys FOR SELECT USING (tenant_id = app.current_tenant_id());
 CREATE POLICY idempotency_insert ON idempotency_keys FOR INSERT WITH CHECK (tenant_id = app.current_tenant_id());
 
 DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='consorcio_app') THEN CREATE ROLE consorcio_app LOGIN PASSWORD 'consorcio_app_secret'; END IF; END $$;

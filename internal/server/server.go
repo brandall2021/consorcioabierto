@@ -1,4 +1,3 @@
-// Package server monta el router HTTP (chi) y el middleware común del API.
 package server
 
 import (
@@ -6,26 +5,35 @@ import (
 	"net/http"
 	"time"
 
+	httpx "github.com/brandall2021/consorcioabierto/apps/api/transport/http"
+	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// New construye el handler raíz con el middleware compartido y las rutas del API.
-func New(log *slog.Logger, _ string) http.Handler {
+// New crea el router HTTP raíz con middleware, rutas y handlers.
+func New(log *slog.Logger, env string, identityManager *identity.AuthManager) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
+	// middleware.RealIP deprecated y removido
+	// r.Use(middleware.RealIP)
+
 	r.Use(middleware.Recoverer)
 	r.Use(requestLogger(log))
 	r.Use(middleware.Timeout(30 * time.Second))
 
-	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
 
 	api := chi.NewRouter()
 	api.Get("/health", handleHealth)
+
+	h := &httpx.AuthHandlers{Manager: identityManager}
+	httpx.RegisterAuthRoutes(api, h)
+
 	r.Mount("/api/v1", api)
 
 	return r
