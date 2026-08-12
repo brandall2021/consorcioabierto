@@ -1,0 +1,107 @@
+// Entrypoint HTTP del API (monolito modular, [ADR-0001]).
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
+
+	"github.com/brandall2021/consorcioabierto/internal/config"
+	"github.com/brandall2021/consorcioabierto/internal/database"
+	"github.com/brandall2021/consorcioabierto/internal/logger"
+	"github.com/brandall2021/consorcioabierto/internal/server"
+)
+
+func main() {
+	log := logger.New(os.Getenv("LOG_FORMAT"))
+
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		runMigrate(log, os.Args[2:])
+		return
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("config", "error", err)
+		os.Exit(1)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	pool, err := database.Connect(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Error("base de datos", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	srv := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           server.New(log, cfg.Env),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		log.Info("api iniciado", "addr", cfg.HTTPAddr, "env", cfg.Env)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("http", "error", err)
+			stop()
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("shutdown", "error", err)
+	}
+	log.Info("api detenido")
+}
+
+// runMigrate ejecuta `go run ./apps/api migrate up|down [n]` con goose.
+func runMigrate(log *slog.Logger, args []string) {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("config", "error", err)
+		os.Exit(1)
+	}
+	if len(args) < 1 {
+		log.Error("uso: go run ./apps/api migrate [up|down <n>]")
+		os.Exit(1)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	dir := "db/migrations"
+	switch args[0] {
+	case "up":
+		err = database.Up(ctx, cfg.DatabaseURL, dir)
+	case "down":
+		n := 1
+		if len(args) > 1 {
+			n, err = strconv.Atoi(args[1])
+			if err != nil {
+				log.Error("paso inválido", "error", err)
+				os.Exit(1)
+			}
+		}
+		err = database.Down(ctx, cfg.DatabaseURL, dir, n)
+	default:
+		log.Error("comando de migración desconocido", "cmd", args[0])
+		os.Exit(1)
+	}
+	if err != nil {
+		log.Error("migración", "error", err)
+		os.Exit(1)
+	}
+	log.Info("migración ok")
+}

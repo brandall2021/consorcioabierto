@@ -21,7 +21,7 @@ Repositorio, Compose, CI, migraciones, identidad, tenants, membresías, RBAC, RL
 
 **Demo:** tenant A y B; prueba automática demuestra aislamiento.
 
-- H1.1 Scaffolding: módulos Go (chi, pgx, sqlc, goose), apps/web (Vite + React + Tailwind), Makefile, Compose (Postgres + MinIO + Mailpit), `.env.example`, CI (lint, test, build, contrato OpenAPI + cliente).
+- H1.1 Scaffolding: módulos Go (chi, pgx, sqlc, goose), apps/web (Vite + React + Tailwind), Makefile, Compose (Postgres + MinIO + Mailpit), `.env.example`, CI (lint, test, build, contrato OpenAPI + cliente). ✅ (2026-08-12)
 - H1.2 Migraciones base + RLS: `users`, `tenants`, `memberships`, roles/scopes, tablas de soporte; políticas RLS y sesión `app.tenant_id`.
 - H1.3 Identidad: login Argon2id, refresh opaco rotativo, MFA (TOTP), límite de intentos.
 - H1.4 Tenancy: membresías, select-tenant, permisos por membresía (caché), middleware de autorización.

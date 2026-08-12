@@ -51,8 +51,9 @@ e2e:           ## Playwright
 	cd apps/web && npm run test:e2e
 
 ## ── Contrato ───────────────────────────────────────────────
-check-openapi: ## Valida sintaxis y referencias del OpenAPI
-	python3 -m yamlcheck api/openapi.yaml
+check-openapi: ## Valida el OpenAPI generando el cliente (falla si el contrato o el cliente quedan desactualizados)
+	cd apps/web && npm run generate:client
+	git diff --exit-code -- api/openapi.yaml apps/web/src/api/generated.d.ts
 
 ## ── Help ───────────────────────────────────────────────────
 help:          ## Muestra esta ayuda

@@ -386,6 +386,20 @@ components:
         expires_at: { type: string, format: date-time }
 
 paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [system]
+      responses:
+        "200":
+          description: Estado del API (liveness).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string }
   /auth/login:
     post:
       operationId: login
