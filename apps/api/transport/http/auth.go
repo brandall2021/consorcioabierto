@@ -250,9 +250,9 @@ func (h *AuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandlers) Me(w http.ResponseWriter, r *http.Request) {
-	claims, err := h.Manager.VerifyAccessToken(h.bearerOrCookie(r))
-	if err != nil {
-		httpapi.WriteProblem(w, r, http.StatusUnauthorized, "unauthorized", "Token inválido", err.Error(), nil)
+	claims := claimsFrom(r.Context())
+	if claims == nil {
+		httpapi.WriteProblem(w, r, http.StatusUnauthorized, "unauthorized", "Token inválido", "claims ausentes", nil)
 		return
 	}
 	me, err := h.Manager.Me(r.Context(), claims)
@@ -265,9 +265,9 @@ func (h *AuthHandlers) Me(w http.ResponseWriter, r *http.Request) {
 
 // Memberships lista las membresías del usuario autenticado.
 func (h *AuthHandlers) Memberships(w http.ResponseWriter, r *http.Request) {
-	claims, err := h.Manager.VerifyAccessToken(h.bearerOrCookie(r))
-	if err != nil {
-		httpapi.WriteProblem(w, r, http.StatusUnauthorized, "unauthorized", "Token inválido", err.Error(), nil)
+	claims := claimsFrom(r.Context())
+	if claims == nil {
+		httpapi.WriteProblem(w, r, http.StatusUnauthorized, "unauthorized", "Token inválido", "claims ausentes", nil)
 		return
 	}
 	memberships, err := h.Manager.ListMemberships(r.Context(), claims)

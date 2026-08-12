@@ -78,6 +78,7 @@ type AuthManager struct {
 	pool     *pgxpool.Pool
 	q        *db.Queries
 	attempts *attemptRecorder
+	cache    *membershipCache
 	now      func() time.Time
 }
 
@@ -89,6 +90,7 @@ func NewAuthManager(cfg *config.Config, key *rsa.PrivateKey, pool *pgxpool.Pool)
 		pool:     pool,
 		q:        db.New(pool),
 		attempts: &attemptRecorder{pool: pool, now: time.Now},
+		cache:    newMembershipCache(cfg.MembershipCacheTTL),
 		now:      time.Now,
 	}
 }
@@ -206,7 +208,7 @@ func (am *AuthManager) openSession(ctx context.Context, user db.User) (*LoginRes
 	}
 	memberships := make([]Membership, 0, len(rows))
 	for _, r := range rows {
-		m, err := am.membershipDTO(ctx, q, r)
+		m, err := am.membershipDTO(ctx, q, user.ID, r)
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +266,12 @@ func (am *AuthManager) openSession(ctx context.Context, user db.User) (*LoginRes
 	return res, nil
 }
 
-func (am *AuthManager) membershipDTO(ctx context.Context, q *db.Queries, r db.ListMembershipsForUserRow) (*Membership, error) {
+func (am *AuthManager) membershipDTO(ctx context.Context, q *db.Queries, uid pgtype.UUID, r db.ListMembershipsForUserRow) (*Membership, error) {
+	key := membershipCacheKey(uid.String(), r.MembershipID.String())
+	if roles, scopes, ok := am.cache.get(key); ok {
+		return membershipFromParts(r, roles, scopes), nil
+	}
+
 	roles, err := q.ListRolesForMembership(ctx, r.MembershipID)
 	if err != nil {
 		return nil, err
@@ -273,27 +280,41 @@ func (am *AuthManager) membershipDTO(ctx context.Context, q *db.Queries, r db.Li
 	if err != nil {
 		return nil, err
 	}
+	am.cache.set(key, rolesCodes(roles), scopesCodes(scopes))
+	return membershipFromParts(r, rolesCodes(roles), scopesCodes(scopes)), nil
+}
 
+func membershipFromParts(r db.ListMembershipsForUserRow, roles []string, scopes []string) *Membership {
 	m := &Membership{
 		ID:           r.MembershipID.String(),
 		TenantID:     r.TenantID.String(),
 		TenantName:   r.TenantName,
 		TenantStatus: r.TenantStatus,
 		Status:       r.MembershipStatus,
-		Roles:        make([]string, 0, len(roles)),
-		Scopes:       make([]string, 0, len(scopes)),
+		Roles:        roles,
+		Scopes:       scopes,
 	}
+	return m
+}
+
+func rolesCodes(roles []db.ListRolesForMembershipRow) []string {
+	codes := make([]string, 0, len(roles))
 	for _, rl := range roles {
-		m.Roles = append(m.Roles, rl.Code)
+		codes = append(codes, rl.Code)
 	}
+	return codes
+}
+
+func scopesCodes(scopes []db.ListScopesForMembershipRow) []string {
+	codes := make([]string, 0, len(scopes))
 	for _, sc := range scopes {
 		s := sc.ScopeType
 		if sc.ScopeID.Valid {
 			s += ":" + sc.ScopeID.String()
 		}
-		m.Scopes = append(m.Scopes, s)
+		codes = append(codes, s)
 	}
-	return m, nil
+	return codes
 }
 
 // SelectTenant valida la membresía del usuario y emite el access token JWT.
@@ -341,7 +362,7 @@ func (am *AuthManager) SelectTenant(ctx context.Context, userID, membershipID st
 		return nil, "", ErrMembershipInactive
 	}
 
-	m, err := am.membershipDTO(ctx, q, *target)
+	m, err := am.membershipDTO(ctx, q, uid, *target)
 	if err != nil {
 		return nil, "", err
 	}
@@ -550,7 +571,7 @@ func (am *AuthManager) membershipByID(ctx context.Context, q *db.Queries, uid, m
 			if rows[i].MembershipStatus != "active" {
 				return nil, ErrMembershipInactive
 			}
-			return am.membershipDTO(ctx, q, rows[i])
+			return am.membershipDTO(ctx, q, uid, rows[i])
 		}
 	}
 	return nil, ErrMembershipNotFound
@@ -579,7 +600,7 @@ func (am *AuthManager) ListMemberships(ctx context.Context, claims *Claims) ([]M
 	}
 	memberships := make([]Membership, 0, len(rows))
 	for _, r := range rows {
-		m, err := am.membershipDTO(ctx, q, r)
+		m, err := am.membershipDTO(ctx, q, uid, r)
 		if err != nil {
 			return nil, err
 		}
@@ -647,4 +668,35 @@ func (am *AuthManager) VerifyAccessToken(token string) (*Claims, error) {
 		return nil, errors.New("clave JWT no configurada")
 	}
 	return parseAndVerifyJWT(am.PublicKey(), token, am.cfg.BaseURL)
+}
+
+// PermissionsForClaims resuelve los permisos efectivos de la membresía activa
+// del token, usando el caché de membresías. Devuelve un error si la membresía
+// ya no existe o está inactiva ([ADR-0009]: la autorización final se resuelve
+// en backend con permiso + tenant + scope).
+func (am *AuthManager) PermissionsForClaims(ctx context.Context, claims *Claims) ([]string, error) {
+	uid, err := pgUUID(claims.Subject)
+	if err != nil {
+		return nil, err
+	}
+	mid, err := pgUUID(claims.Membership)
+	if err != nil {
+		return nil, ErrMembershipNotFound
+	}
+
+	tx, err := am.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := am.q.WithTx(tx)
+	if err := tenancy.SetUser(ctx, tx, claims.Subject); err != nil {
+		return nil, err
+	}
+	m, err := am.membershipByID(ctx, q, uid, mid)
+	if err != nil {
+		return nil, err
+	}
+	return PermissionsForRoles(m.Roles), nil
 }

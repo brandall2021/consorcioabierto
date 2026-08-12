@@ -14,6 +14,10 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 	r.Post("/auth/mfa/confirm", h.MfaConfirm)
 	r.Post("/auth/mfa/verify", h.MfaVerify)
 	r.Post("/auth/mfa/disable", h.MfaDisable)
-	r.Get("/me", h.Me)
-	r.Get("/memberships", h.Memberships)
+
+	r.Group(func(authed chi.Router) {
+		authed.Use(RequireAuth(h.Manager))
+		authed.Get("/me", h.Me)
+		authed.Get("/memberships", h.Memberships)
+	})
 }

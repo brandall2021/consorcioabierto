@@ -24,6 +24,7 @@ type Config struct {
 	MFATokenTTL        time.Duration
 	LoginMaxAttempts   int
 	LoginAttemptWindow time.Duration
+	MembershipCacheTTL time.Duration
 	JWTPrivateKey      string
 
 	StorageDriver string
@@ -46,6 +47,7 @@ func Load() (*Config, error) {
 		MFATokenTTL:        getDuration("MFA_TOKEN_TTL", 5*time.Minute),
 		LoginMaxAttempts:   getInt("LOGIN_MAX_ATTEMPTS", 5),
 		LoginAttemptWindow: getDuration("LOGIN_ATTEMPT_WINDOW", 15*time.Minute),
+		MembershipCacheTTL: getDuration("MEMBERSHIP_CACHE_TTL", time.Minute),
 		JWTPrivateKey:      os.Getenv("JWT_PRIVATE_KEY"),
 		StorageDriver:    getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:       getenv("MAIL_DRIVER", "mailpit"),
