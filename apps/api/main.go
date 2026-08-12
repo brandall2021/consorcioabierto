@@ -1,4 +1,3 @@
-// Entrypoint HTTP del API (monolito modular, [ADR-0001]).
 package main
 
 import (
@@ -35,7 +34,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := database.Connect(ctx, cfg.DatabaseURL)
+	var dbURL string
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		dbURL = cfg.DatabaseURLAdmin
+	} else {
+		dbURL = cfg.DatabaseURL
+	}
+
+	pool, err := database.Connect(ctx, dbURL)
 	if err != nil {
 		log.Error("base de datos", "error", err)
 		os.Exit(1)
@@ -81,10 +87,17 @@ func runMigrate(log *slog.Logger, args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
+	var dbURL string
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		dbURL = cfg.DatabaseURLAdmin
+	} else {
+		dbURL = cfg.DatabaseURL
+	}
+
 	dir := "db/migrations"
 	switch args[0] {
 	case "up":
-		err = database.Up(ctx, cfg.DatabaseURL, dir)
+		err = database.Up(ctx, dbURL, dir)
 	case "down":
 		n := 1
 		if len(args) > 1 {
@@ -94,9 +107,9 @@ func runMigrate(log *slog.Logger, args []string) {
 				os.Exit(1)
 			}
 		}
-		err = database.Down(ctx, cfg.DatabaseURL, dir, n)
+		err = database.Down(ctx, dbURL, dir, n)
 	default:
-		log.Error("comando de migración desconocido", "cmd", args[0])
+		log.Error("comando desconocido", "cmd", args[0])
 		os.Exit(1)
 	}
 	if err != nil {

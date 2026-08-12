@@ -13,3 +13,86 @@ type AppMetum struct {
 	Value     string             `json:"value"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
+
+type IdempotencyKey struct {
+	ID             pgtype.UUID        `json:"id"`
+	TenantID       pgtype.UUID        `json:"tenant_id"`
+	IdempotencyKey string             `json:"idempotency_key"`
+	Scope          string             `json:"scope"`
+	RequestHash    string             `json:"request_hash"`
+	ResponseJson   []byte             `json:"response_json"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type Membership struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	Status    string             `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type MembershipRole struct {
+	ID           pgtype.UUID `json:"id"`
+	MembershipID pgtype.UUID `json:"membership_id"`
+	RoleID       pgtype.UUID `json:"role_id"`
+}
+
+type RefreshToken struct {
+	ID        pgtype.UUID        `json:"id"`
+	SessionID pgtype.UUID        `json:"session_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	FamilyID  pgtype.UUID        `json:"family_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Role struct {
+	ID    pgtype.UUID `json:"id"`
+	Code  string      `json:"code"`
+	Label string      `json:"label"`
+}
+
+type RoleScope struct {
+	ID               pgtype.UUID `json:"id"`
+	MembershipRoleID pgtype.UUID `json:"membership_role_id"`
+	ScopeType        string      `json:"scope_type"`
+	ScopeID          pgtype.UUID `json:"scope_id"`
+}
+
+type Session struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	MembershipID pgtype.UUID        `json:"membership_id"`
+	SessionKey   pgtype.UUID        `json:"session_key"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt    pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	LastUsedAt   pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type Tenant struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Slug      string             `json:"slug"`
+	TaxID     pgtype.Text        `json:"tax_id"`
+	Status    string             `json:"status"`
+	PlanCode  string             `json:"plan_code"`
+	Timezone  string             `json:"timezone"`
+	Currency  string             `json:"currency"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type User struct {
+	ID              pgtype.UUID        `json:"id"`
+	EmailNormalized string             `json:"email_normalized"`
+	PasswordHash    string             `json:"password_hash"`
+	Name            string             `json:"name"`
+	Status          string             `json:"status"`
+	MfaEnabled      bool               `json:"mfa_enabled"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}

@@ -10,16 +10,17 @@ import (
 
 // Config concentra las variables de entorno del proceso (apps/api y apps/worker).
 type Config struct {
-	Env            string
-	LogFormat      string
-	HTTPAddr       string
-	BaseURL        string
-	RequestTimeout time.Duration
-	DatabaseURL    string
+	Env             string
+	LogFormat       string
+	HTTPAddr        string
+	BaseURL         string
+	RequestTimeout  time.Duration
+	DatabaseURL     string
+	DatabaseURLAdmin string
 
-	StorageDriver string
-	MailDriver    string
-	PSPDriver     string
+	StorageDriver   string
+	MailDriver      string
+	PSPDriver       string
 }
 
 // Load lee la configuración y la valida.
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		BaseURL:        getenv("APP_BASE_URL", "http://localhost:8080"),
 		RequestTimeout: getDuration("APP_REQUEST_TIMEOUT", 30*time.Second),
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		DatabaseURLAdmin: os.Getenv("DATABASE_URL_ADMIN"),
 		StorageDriver:  getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:     getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:      getenv("PSP_DRIVER", "mock"),

@@ -20,8 +20,8 @@ memberships(id, user_id FK, tenant_id FK, status, created_at)
 
 roles(id, code UNIQUE, label)          -- platform_admin no vive aquí: es global
 
-membership_roles(membership_id FK, role_id FK)
-  PK(membership_id, role_id)
+membership_roles(id UUID primary key, membership_id FK, role_id FK)
+  UNIQUE(membership_id, role_id)
 
 role_scopes(id, membership_role_id FK, scope_type, scope_id)
   scope_type = tenant | consorcio | uf

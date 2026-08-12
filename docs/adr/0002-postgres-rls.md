@@ -10,10 +10,12 @@ El principio 2 de la especificación exige aislamiento multi-tenant: toda entida
 ## Decisión
 
 - PostgreSQL 16+, acceso con `pgx` + `sqlc`.
-- Cada sesión de base establece `app.tenant_id` (vía `SET LOCAL`/session variable) resuelto en el middleware desde la membresía activa, nunca desde query/body.
-- RLS habilitado por defecto (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) en toda tabla multi-tenant, con política `USING (tenant_id = current_setting('app.tenant_id')::uuid)` y política de servicio para el worker (auditoría y outbox).
+- Cada sesión de base establece `app.tenant_id` y `app.user_id` (vía `SET LOCAL`/session variable) resuelto en el middleware desde la membresía activa, nunca desde query/body.
+- RLS habilitado por defecto (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) en toda tabla multi-tenant, con políticas específicas sobre cada tabla basadas en `app.current_tenant_id()` y `app.current_user_id()`.
 - Las FK de negocio se diseñan como claves compuestas o se validan transaccionalmente para impedir referencias cruzadas entre tenants.
 - La capa de aplicación SIEMPRE filtra por tenant en SQL: RLS es refuerzo, no sustituto.
+- El rol de aplicación no es el dueño de las tablas y está sujeto a RLS; el dueño o migraciones pueden bypassear RLS a menos que se fuerce.
+- El contexto de tenant y usuario debe propagarse también a jobs y worker (regla de aislamiento 3).
 
 ## Consecuencias
 
