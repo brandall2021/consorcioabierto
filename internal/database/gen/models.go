@@ -24,6 +24,21 @@ type AppVRefreshToken struct {
 	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
 }
 
+type AuditEvent struct {
+	ID              pgtype.UUID        `json:"id"`
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	ActorID         pgtype.UUID        `json:"actor_id"`
+	ActorMembership pgtype.UUID        `json:"actor_membership"`
+	Accion          string             `json:"accion"`
+	RecursoType     string             `json:"recurso_type"`
+	RecursoID       pgtype.Text        `json:"recurso_id"`
+	RequestID       pgtype.Text        `json:"request_id"`
+	Ip              pgtype.Text        `json:"ip"`
+	UserAgent       pgtype.Text        `json:"user_agent"`
+	Diff            []byte             `json:"diff"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
 type IdempotencyKey struct {
 	ID             pgtype.UUID        `json:"id"`
 	TenantID       pgtype.UUID        `json:"tenant_id"`

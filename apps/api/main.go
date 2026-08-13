@@ -13,6 +13,7 @@ import (
 
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
+	"github.com/brandall2021/consorcioabierto/internal/audit"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
 	"github.com/brandall2021/consorcioabierto/internal/server"
@@ -52,7 +53,7 @@ func main() {
 		identityManager = identity.NewAuthManager(cfg, privateKey, pool)
 	}
 
-	r := server.New(log, cfg.Env, identityManager)
+	r := server.New(log, cfg.Env, identityManager, audit.New(pool))
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           r,

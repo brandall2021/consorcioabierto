@@ -20,4 +20,9 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		authed.Get("/me", h.Me)
 		authed.Get("/memberships", h.Memberships)
 	})
+
+	r.Route("/audit-events", func(ar chi.Router) {
+		ar.Use(RequirePermission(h.Manager, "auditoria.read"))
+		ar.Get("/", h.listAuditEventsHandler())
+	})
 }

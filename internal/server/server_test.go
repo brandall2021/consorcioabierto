@@ -10,7 +10,7 @@ import (
 )
 
 func newTestServer() http.Handler {
-	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil)
+	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil, nil)
 }
 
 func TestHealthzRoot(t *testing.T) {

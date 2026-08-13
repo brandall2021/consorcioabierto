@@ -103,6 +103,9 @@ func (am *AuthManager) PublicKey() *rsa.PublicKey {
 	return &am.key.PublicKey
 }
 
+// Pool expone el pool de conexiones compartido (auditoría, tenancy).
+func (am *AuthManager) Pool() *pgxpool.Pool { return am.pool }
+
 // Issuer devuelve el issuer esperado en los access tokens.
 func (am *AuthManager) Issuer() string { return am.cfg.BaseURL }
 
