@@ -25,4 +25,16 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		ar.Use(RequirePermission(h.Manager, "auditoria.read"))
 		ar.Get("/", h.listAuditEventsHandler())
 	})
+
+	// Consorcios: lectura con consorcios.read, escritura con consorcios.manage.
+	r.Group(func(cr chi.Router) {
+		cr.Use(RequirePermission(h.Manager, "consorcios.read"))
+		cr.Get("/consorcios", h.ListConsorcios)
+		cr.Get("/consorcios/{id}", h.GetConsorcio)
+		cr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "consorcios.manage"))
+			mgmt.Post("/consorcios", h.CreateConsorcio)
+			mgmt.Patch("/consorcios/{id}", h.UpdateConsorcio)
+		})
+	})
 }

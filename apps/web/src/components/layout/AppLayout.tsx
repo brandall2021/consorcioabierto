@@ -6,6 +6,7 @@ export function AppLayout() {
   const { me, logout } = useAuth()
   const permissions = me?.permissions ?? []
   const canReadAudit = permissions.includes('auditoria.read')
+  const canReadConsorcios = permissions.includes('consorcios.read')
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-md px-3 py-2 text-sm ${
@@ -23,13 +24,13 @@ export function AppLayout() {
             Inicio
           </NavLink>
 
-          {isEnabled('consorcios') && (
+          {isEnabled('consorcios') && canReadConsorcios && (
             <>
               <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-gray-400">
                 Consorcios
               </p>
               <NavLink to="/app/consorcios" className={navLinkClass}>
-                Resumen
+                Consorcios
               </NavLink>
             </>
           )}

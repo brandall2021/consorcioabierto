@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Auditoria } from '@/pages/auditoria/Auditoria'
+import { Consorcios } from '@/pages/consorcios/Consorcios'
 import { Dashboard } from '@/pages/dashboard/Dashboard'
 import { Login } from '@/pages/login/Login'
 import { Perfil } from '@/pages/perfil/Perfil'
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
             element: <AppLayout />,
             children: [
               { index: true, element: <Dashboard /> },
+              { path: 'consorcios', element: <Consorcios /> },
               { path: 'auditoria', element: <Auditoria /> },
               { path: 'perfil', element: <Perfil /> },
             ],

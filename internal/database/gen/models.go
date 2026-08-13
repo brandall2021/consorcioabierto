@@ -39,6 +39,19 @@ type AuditEvent struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
+type Consorcio struct {
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	ID        pgtype.UUID        `json:"id"`
+	Nombre    string             `json:"nombre"`
+	Cuit      pgtype.Text        `json:"cuit"`
+	Domicilio pgtype.Text        `json:"domicilio"`
+	Tipo      string             `json:"tipo"`
+	Estado    string             `json:"estado"`
+	Config    []byte             `json:"config"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type IdempotencyKey struct {
 	ID             pgtype.UUID        `json:"id"`
 	TenantID       pgtype.UUID        `json:"tenant_id"`
