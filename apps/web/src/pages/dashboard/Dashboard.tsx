@@ -1,42 +1,32 @@
-import { useQuery } from '@tanstack/react-query'
-import { client } from '@/api/client'
+import { useAuth } from '@/auth/AuthProvider'
 
 export function Dashboard() {
-  const { data, error, isLoading } = useQuery({
-    queryKey: ['health'],
-    queryFn: async () => {
-      const res = await client.GET('/health')
-      if (!res.data) {
-        throw new Error('API no disponible')
-      }
-      return res.data
-    },
-  })
+  const { me } = useAuth()
 
-  if (isLoading) {
+  if (!me) {
     return (
       <section aria-busy="true">
-        <h1 className="text-lg font-medium">Estado del API</h1>
+        <h1 className="text-lg font-medium">Inicio</h1>
         <p className="mt-2 text-gray-500">Cargando…</p>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section>
-        <h1 className="text-lg font-medium">Estado del API</h1>
-        <p className="mt-2 text-red-600">No se pudo conectar: {error.message}</p>
       </section>
     )
   }
 
   return (
     <section>
-      <h1 className="text-lg font-medium">Estado del API</h1>
-      <p className="mt-2 text-gray-700">
-        API {data?.status === 'ok' ? 'operativa' : 'en estado desconocido'}
-      </p>
+      <h1 className="text-lg font-medium">Inicio</h1>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Usuario</p>
+          <p className="mt-1 font-medium">{me.user.name}</p>
+          <p className="text-sm text-gray-500">{me.user.email}</p>
+        </div>
+        <div className="rounded-lg border bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Consorcio</p>
+          <p className="mt-1 font-medium">{me.membership.tenant_name}</p>
+          <p className="text-sm text-gray-500">{me.membership.roles.join(', ')}</p>
+        </div>
+      </div>
     </section>
   )
 }
