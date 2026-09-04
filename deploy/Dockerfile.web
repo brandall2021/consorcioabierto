@@ -1,0 +1,24 @@
+# ConsorcioAbierto — Frontend React/Vite
+# Build multi-stage: compila la SPA y la sirve con nginx.
+# El nginx hace proxy de /api/ hacia el backend (API_UPSTREAM, default http://backend:8090).
+FROM node:22-alpine AS build
+
+WORKDIR /src
+COPY apps/web/package.json apps/web/package-lock.json* ./
+RUN npm ci
+
+COPY apps/web .
+COPY api /api
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+ENV API_UPSTREAM=http://backend:8090
+ENV NGINX_ENVSUBST_FILTER=API_UPSTREAM
+
+COPY deploy/nginx.conf /etc/nginx/templates/default.conf.template
+COPY --from=build /src/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
