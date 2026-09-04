@@ -37,4 +37,17 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 			mgmt.Patch("/consorcios/{id}", h.UpdateConsorcio)
 		})
 	})
+
+	// Unidades: lectura con ufs.read, escritura con ufs.manage.
+	r.Group(func(ur chi.Router) {
+		ur.Use(RequirePermission(h.Manager, "ufs.read"))
+		ur.Get("/consorcios/{id}/unidades", h.ListUnidades)
+		ur.Get("/import-jobs/{id}", h.GetImportJob)
+		ur.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "ufs.manage"))
+			mgmt.Post("/consorcios/{id}/unidades", h.CreateUnidad)
+			mgmt.Post("/consorcios/{id}/unidades/import-jobs", h.CreateImportJob)
+			mgmt.Post("/import-jobs/{id}/confirm", h.ConfirmImportJob)
+		})
+	})
 }

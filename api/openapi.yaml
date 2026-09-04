@@ -275,6 +275,11 @@ components:
           type: string
           description: NUMERIC(12,8), >= 0
         estado: { type: string }
+        personas:
+          type: array
+          description: Vínculos vigentes de la UF.
+          items:
+            $ref: "#/components/schemas/PersonaVinculo"
     UnidadInput:
       type: object
       additionalProperties: false
@@ -288,6 +293,49 @@ components:
         coeficiente:
           type: string
           pattern: "^([0-9]+(\\.[0-9]{1,8})?|0)$"
+        personas:
+          type: array
+          description: Personas a vincular (crear o reusar por documento) al crear la UF.
+          items:
+            $ref: "#/components/schemas/PersonaVinculoInput"
+    Persona:
+      type: object
+      required: [id, nombre]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        documento: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        telefono: { type: [string, "null"] }
+    PersonaVinculo:
+      type: object
+      required: [persona, vinculo]
+      properties:
+        persona: { $ref: "#/components/schemas/Persona" }
+        vinculo:
+          type: string
+          enum: [propietario, inquilino, apoderado]
+        porcentaje: { type: [string, "null"] }
+        valid_from: { type: string, format: date }
+    PersonaVinculoInput:
+      type: object
+      additionalProperties: false
+      required: [persona, vinculo]
+      properties:
+        persona:
+          type: object
+          additionalProperties: false
+          required: [nombre]
+          properties:
+            nombre: { type: string, maxLength: 200 }
+            documento: { type: [string, "null"], maxLength: 30 }
+            email: { type: [string, "null"], format: email }
+            telefono: { type: [string, "null"], maxLength: 30 }
+        vinculo:
+          type: string
+          enum: [propietario, inquilino, apoderado]
+        porcentaje: { type: [string, "null"], pattern: "^([0-9]+(\\.[0-9]{1,2})?|0)$" }
+        valid_from: { type: [string, "null"], format: date }
     ImportJob:
       type: object
       required: [id, estado]

@@ -62,6 +62,24 @@ type IdempotencyKey struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type ImportJob struct {
+	TenantID          pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID       pgtype.UUID        `json:"consorcio_id"`
+	ID                pgtype.UUID        `json:"id"`
+	Estado            string             `json:"estado"`
+	Modo              string             `json:"modo"`
+	PlantillaVersion  string             `json:"plantilla_version"`
+	TotalFilas        int32              `json:"total_filas"`
+	Filas             []byte             `json:"filas"`
+	Errores           []byte             `json:"errores"`
+	Creados           int32              `json:"creados"`
+	Actualizados      int32              `json:"actualizados"`
+	Rechazados        int32              `json:"rechazados"`
+	ArchivoErroresUrl pgtype.Text        `json:"archivo_errores_url"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type LoginAttempt struct {
 	ID              pgtype.UUID        `json:"id"`
 	EmailNormalized string             `json:"email_normalized"`
@@ -83,6 +101,17 @@ type MembershipRole struct {
 	ID           pgtype.UUID `json:"id"`
 	MembershipID pgtype.UUID `json:"membership_id"`
 	RoleID       pgtype.UUID `json:"role_id"`
+}
+
+type Persona struct {
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	ID        pgtype.UUID        `json:"id"`
+	Nombre    string             `json:"nombre"`
+	Documento pgtype.Text        `json:"documento"`
+	Email     pgtype.Text        `json:"email"`
+	Telefono  pgtype.Text        `json:"telefono"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type RefreshToken struct {
@@ -131,6 +160,31 @@ type Tenant struct {
 	Currency  string             `json:"currency"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UnidadPersona struct {
+	TenantID   pgtype.UUID        `json:"tenant_id"`
+	ID         pgtype.UUID        `json:"id"`
+	UnidadID   pgtype.UUID        `json:"unidad_id"`
+	PersonaID  pgtype.UUID        `json:"persona_id"`
+	Vinculo    string             `json:"vinculo"`
+	Porcentaje pgtype.Numeric     `json:"porcentaje"`
+	ValidFrom  pgtype.Date        `json:"valid_from"`
+	ValidTo    pgtype.Date        `json:"valid_to"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type Unidade struct {
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID pgtype.UUID        `json:"consorcio_id"`
+	ID          pgtype.UUID        `json:"id"`
+	Codigo      string             `json:"codigo"`
+	Tipo        string             `json:"tipo"`
+	Superficie  pgtype.Numeric     `json:"superficie"`
+	Coeficiente pgtype.Numeric     `json:"coeficiente"`
+	Estado      string             `json:"estado"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

@@ -760,6 +760,8 @@ export interface components {
             /** @description NUMERIC(12,8), >= 0 */
             coeficiente: string;
             estado: string;
+            /** @description Vínculos vigentes de la UF. */
+            personas?: components["schemas"]["PersonaVinculo"][];
         };
         UnidadInput: {
             codigo: string;
@@ -767,6 +769,38 @@ export interface components {
             tipo: "departamento" | "cochera" | "local" | "unidad_edificio" | "otros";
             superficie?: number | null;
             coeficiente?: string;
+            /** @description Personas a vincular (crear o reusar por documento) al crear la UF. */
+            personas?: components["schemas"]["PersonaVinculoInput"][];
+        };
+        Persona: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            documento?: string | null;
+            email?: string | null;
+            telefono?: string | null;
+        };
+        PersonaVinculo: {
+            persona: components["schemas"]["Persona"];
+            /** @enum {string} */
+            vinculo: "propietario" | "inquilino" | "apoderado";
+            porcentaje?: string | null;
+            /** Format: date */
+            valid_from?: string;
+        };
+        PersonaVinculoInput: {
+            persona: {
+                nombre: string;
+                documento?: string | null;
+                /** Format: email */
+                email?: string | null;
+                telefono?: string | null;
+            };
+            /** @enum {string} */
+            vinculo: "propietario" | "inquilino" | "apoderado";
+            porcentaje?: string | null;
+            /** Format: date */
+            valid_from?: string | null;
         };
         ImportJob: {
             /** Format: uuid */
