@@ -143,6 +143,83 @@ curl -c /tmp/cj -X POST http://localhost:8090/api/v1/auth/login \
 
 Seed local (creado a mano en la BD local, no viene en el repo): `admin@tenant-a.com` / `Admin.123` (tenant A). Ver `docs/permission-matrix.md` §"Semilla sugerida" para los roles de demo.
 
+## Deploy en Dokploy
+
+ConsorcioAbierto se despliega en Dokploy como **dos aplicaciones separadas** (api + web). Ambas se buildean desde el repositorio de GitHub (`brandall2021/consorcioabierto`) usando los Dockerfiles de `deploy/`.
+
+> El deploy se hace **por proyecto/env production**. La instancia Dokploy de este proyecto es `https://dokploy.softgroup.com.ar/` (API key por `x-api-key`).
+
+### Componentes
+
+| App | Dockerfile | Puerto | Ruta base |
+|---|---|---|---|
+| Backend (Go) | `deploy/Dockerfile.api` | `8080` | `/` |
+| Frontend (React/Vite + nginx) | `deploy/Dockerfile.web` | `80` | `/` |
+
+El web usa nginx que sirve los estáticos y **proxea `/api/`** hacia el backend usando `API_UPSTREAM` (por defecto `http://consorcioabierto-api-gf3qkl:8080`). El nginx usa `resolver` + `set`, por lo que **arranca aunque el backend aún no esté desplegado** (las llamadas a `/api/` devuelven `502` hasta que el backend exista).
+
+### Proyecto y aplicaciones (IDs ya creados)
+
+- Proyecto: `consorcioabierto` → `R-IFWoe_rMy-RxGw01UtT`
+- Environment `production` → `67MjIowEN4mbxjYyvZkjm`
+- App **api** (`consorcioabierto-api`): `IboPj4bK-rQiftkHj7RRM` — appName `consorcioabierto-api-gf3qkl`
+- App **web** (`consorcioabierto-web`): `kayKhRRaniBbjZgL8aQH-` — appName `consorcioabierto-web-lpmq6x`
+- Dominio público que sirve el web: `consorcioabierto.softgroup.com.ar` (app web, puerto 80, HTTPS Let's Encrypt)
+
+> **Importante:** el upstream del nginx del web apunta al backend por su `appName` interno (`consorcioabierto-api-gf3qkl`). Si se recrea la app del backend, ese nombre cambia y hay que actualizar `API_UPSTREAM` en la env del web.
+
+### Variables de entorno del backend (app `consorcioabierto-api`)
+
+Obligatorias al arrancar (ver `internal/config/config.go`):
+
+```env
+APP_ENV=production
+APP_HTTP_ADDR=:8080
+APP_BASE_URL=https://consorcioabierto.softgroup.com.ar
+DATABASE_URL=postgres://USER:PASS@HOST:5432/DB?sslmode=disable
+DATABASE_URL_ADMIN=postgres://USER:PASS@HOST:5432/DB?sslmode=disable   # para migraciones
+JWT_PRIVATE_KEY=# PEM RSA privada (PKCS8) — sensible
+```
+
+Opcionales (con default seguro):
+
+```env
+LOG_FORMAT=json
+APP_REQUEST_TIMEOUT=30s
+ACCESS_TOKEN_TTL=10m
+REFRESH_TOKEN_TTL=720h
+MFA_TOKEN_TTL=5m
+LOGIN_MAX_ATTEMPTS=5
+LOGIN_ATTEMPT_WINDOW=15m
+MEMBERSHIP_CACHE_TTL=1m
+STORAGE_DRIVER=minio      # en producción debe ser s3 (no mock)
+MAIL_DRIVER=smtp          # en producción NO mailpit
+PSP_DRIVER=mock           # en producción decidir canal real
+```
+
+> En `APP_ENV=production` el arranque **falla** si `STORAGE_DRIVER`/`MAIL_DRIVER`/`PSP_DRIVER` contienen `mock`/`mailpit` (validación de `config.Validate`). No declarar los cambios sin esos drivers configurados.
+
+### Variables de entorno del frontend (app `consorcioabierto-web`)
+
+Solo una:
+
+```env
+API_UPSTREAM=http://consorcioabierto-api-gf3qkl:8080   # backend interno (swarm DNS)
+```
+
+### Migraciones
+
+Las migraciones NO corren solas en el deploy. Ejecutarlas con la imagen del api apuntando a `DATABASE_URL_ADMIN`:
+
+```sh
+docker run --rm -e DATABASE_URL_ADMIN='postgres://…' consorcioabierto-api migrate up
+```
+
+### Red / DNS
+
+- Las dos apps deben vivir en la **misma red** de Dokploy para que el web resuelva al backend por `appName`.
+- El dominio público `consorcioabierto.softgroup.com.ar` debe tener un **registro A** que apunte a la IP del server para que Let's Encrypt emita el certificado y el sitio sea accesible.
+
 ## Repositorio
 
 - Remoto: `github.com/brandall2021/consorcioabierto` (privado).
