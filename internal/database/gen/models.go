@@ -114,6 +114,20 @@ type Persona struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Proveedore struct {
+	TenantID         pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID      pgtype.UUID        `json:"consorcio_id"`
+	ID               pgtype.UUID        `json:"id"`
+	Cuit             string             `json:"cuit"`
+	RazonSocial      string             `json:"razon_social"`
+	ContactoNombre   pgtype.Text        `json:"contacto_nombre"`
+	ContactoEmail    pgtype.Text        `json:"contacto_email"`
+	ContactoTelefono pgtype.Text        `json:"contacto_telefono"`
+	Estado           string             `json:"estado"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
 type RefreshToken struct {
 	ID        pgtype.UUID        `json:"id"`
 	SessionID pgtype.UUID        `json:"session_id"`

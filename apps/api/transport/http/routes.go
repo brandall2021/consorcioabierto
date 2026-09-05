@@ -50,4 +50,17 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 			mgmt.Post("/import-jobs/{id}/confirm", h.ConfirmImportJob)
 		})
 	})
+
+	// Proveedores: lectura con proveedores.read, escritura con proveedores.manage.
+	r.Group(func(pr chi.Router) {
+		pr.Use(RequirePermission(h.Manager, "proveedores.read"))
+		pr.Get("/consorcios/{id}/proveedores", h.ListProveedores)
+		pr.Get("/proveedores/{id}", h.GetProveedor)
+		pr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "proveedores.manage"))
+			mgmt.Post("/consorcios/{id}/proveedores", h.CreateProveedor)
+			mgmt.Patch("/proveedores/{id}", h.UpdateProveedor)
+			mgmt.Patch("/proveedores/{id}/estado", h.SetProveedorEstado)
+		})
+	})
 }
