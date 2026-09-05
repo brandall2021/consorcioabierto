@@ -145,8 +145,15 @@ export function Consorcios() {
               </tr>
             )}
             {consorcios.map((c) => (
-              <tr key={c.id}>
-                <td className="px-3 py-2 font-medium">{c.nombre}</td>
+              <tr key={c.id} className="hover:bg-gray-50">
+                <td className="px-3 py-2 font-medium">
+                  <a
+                    href={`/app/consorcios/${c.id}`}
+                    className="text-gray-900 underline-offset-2 hover:underline"
+                  >
+                    {c.nombre}
+                  </a>
+                </td>
                 <td className="px-3 py-2 text-gray-500">{c.cuit ?? '—'}</td>
                 <td className="px-3 py-2 text-gray-500">{c.domicilio ?? '—'}</td>
                 <td className="px-3 py-2 text-gray-500">

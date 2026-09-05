@@ -3,6 +3,9 @@ import { AuthProvider, useAuth } from '@/auth/AuthProvider'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Auditoria } from '@/pages/auditoria/Auditoria'
 import { Consorcios } from '@/pages/consorcios/Consorcios'
+import { ConsorcioLayout } from '@/pages/consorcios/ConsorcioLayout'
+import { Proveedores } from '@/pages/proveedores/Proveedores'
+import { Unidades } from '@/pages/unidades/Unidades'
 import { Dashboard } from '@/pages/dashboard/Dashboard'
 import { Login } from '@/pages/login/Login'
 import { Perfil } from '@/pages/perfil/Perfil'
@@ -40,6 +43,15 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Dashboard /> },
               { path: 'consorcios', element: <Consorcios /> },
+              {
+                path: 'consorcios/:consorcioId',
+                element: <ConsorcioLayout />,
+                children: [
+                  { index: true, element: <Unidades /> },
+                  { path: 'unidades', element: <Unidades /> },
+                  { path: 'proveedores', element: <Proveedores /> },
+                ],
+              },
               { path: 'auditoria', element: <Auditoria /> },
               { path: 'perfil', element: <Perfil /> },
             ],
