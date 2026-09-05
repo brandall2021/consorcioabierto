@@ -7,13 +7,14 @@ import (
 
 	httpx "github.com/brandall2021/consorcioabierto/apps/api/transport/http"
 	"github.com/brandall2021/consorcioabierto/internal/audit"
+	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 // New crea el router HTTP raíz con middleware, rutas y handlers.
-func New(log *slog.Logger, env string, identityManager *identity.AuthManager, auditRecorder *audit.Recorder) http.Handler {
+func New(log *slog.Logger, env string, identityManager *identity.AuthManager, auditRecorder *audit.Recorder, docsEnv documentos.DocsEnv) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -32,7 +33,7 @@ func New(log *slog.Logger, env string, identityManager *identity.AuthManager, au
 	api := chi.NewRouter()
 	api.Get("/health", handleHealth)
 
-	h := &httpx.AuthHandlers{Manager: identityManager, Audit: auditRecorder}
+	h := &httpx.AuthHandlers{Manager: identityManager, Audit: auditRecorder, Docs: docsEnv}
 	httpx.RegisterAuthRoutes(api, h)
 
 	r.Mount("/api/v1", api)

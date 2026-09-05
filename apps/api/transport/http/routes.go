@@ -63,4 +63,14 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 			mgmt.Patch("/proveedores/{id}/estado", h.SetProveedorEstado)
 		})
 	})
+
+	// Documentos: lectura con documentos.read, subida con documentos.manage.
+	r.Group(func(dr chi.Router) {
+		dr.Use(RequirePermission(h.Manager, "documentos.read"))
+		dr.Get("/documentos/{id}/download-url", h.GetDocumentDownloadUrl)
+		dr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "documentos.manage"))
+			mgmt.Post("/document-upload-intents", h.CreateDocumentUploadIntent)
+		})
+	})
 }

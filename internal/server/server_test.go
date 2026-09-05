@@ -7,10 +7,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/brandall2021/consorcioabierto/internal/documentos"
 )
 
 func newTestServer() http.Handler {
-	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil, nil)
+	docsEnv := documentos.DocsEnv{
+		Storage:   documentos.NewMemoryStorage(),
+		Scanner:   documentos.NewMockScanner(),
+		MaxUpload: 10 << 20,
+		SignedTTL: 5 * time.Minute,
+	}
+	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil, nil, docsEnv)
 }
 
 func TestHealthzRoot(t *testing.T) {

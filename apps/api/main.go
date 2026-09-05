@@ -14,6 +14,7 @@ import (
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
 	"github.com/brandall2021/consorcioabierto/internal/audit"
+	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
 	"github.com/brandall2021/consorcioabierto/internal/server"
@@ -53,7 +54,17 @@ func main() {
 		identityManager = identity.NewAuthManager(cfg, privateKey, pool)
 	}
 
-	r := server.New(log, cfg.Env, identityManager, audit.New(pool))
+	docsEnv, err := documentos.DocsEnvFromConfig(
+		cfg.StorageDriver, cfg.ScanDriver,
+		cfg.S3Endpoint, cfg.S3AccessKey, cfg.S3SecretKey, cfg.S3Region, cfg.S3Bucket,
+		cfg.S3UseSSL, cfg.S3SignedTTL, cfg.MaxUploadBytes,
+	)
+	if err != nil {
+		log.Error("config documentos", "error", err)
+		os.Exit(1)
+	}
+
+	r := server.New(log, cfg.Env, identityManager, audit.New(pool), docsEnv)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           r,

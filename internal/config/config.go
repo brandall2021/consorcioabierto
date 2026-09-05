@@ -30,6 +30,17 @@ type Config struct {
 	StorageDriver string
 	MailDriver    string
 	PSPDriver     string
+
+	S3Endpoint    string
+	S3Bucket      string
+	S3AccessKey   string
+	S3SecretKey   string
+	S3Region      string
+	S3UseSSL      bool
+	S3SignedTTL   time.Duration
+
+	ScanDriver      string
+	MaxUploadBytes  int64
 }
 
 // Load lee la configuración y la valida.
@@ -52,6 +63,15 @@ func Load() (*Config, error) {
 		StorageDriver:    getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:       getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:        getenv("PSP_DRIVER", "mock"),
+		S3Endpoint:       getenv("S3_ENDPOINT", "http://localhost:9000"),
+		S3Bucket:         getenv("S3_BUCKET", "consorcio-docs"),
+		S3AccessKey:      getenv("S3_ACCESS_KEY", ""),
+		S3SecretKey:      getenv("S3_SECRET_KEY", ""),
+		S3Region:         getenv("S3_REGION", "us-east-1"),
+		S3UseSSL:         os.Getenv("S3_USE_SSL") == "true",
+		S3SignedTTL:      getDuration("S3_SIGNED_URL_TTL", 5*time.Minute),
+		ScanDriver:       getenv("SCAN_DRIVER", "mock"),
+		MaxUploadBytes:   getInt64("MAX_UPLOAD_BYTES", 10<<20),
 	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -70,6 +90,7 @@ func (c *Config) Validate() error {
 			{"STORAGE_DRIVER", c.StorageDriver},
 			{"MAIL_DRIVER", c.MailDriver},
 			{"PSP_DRIVER", c.PSPDriver},
+			{"SCAN_DRIVER", c.ScanDriver},
 		} {
 			if d.val == "mock" || d.val == "mailpit" || strings.Contains(d.val, "mock") {
 				return fmt.Errorf("%s=%q está prohibido en production", d.name, d.val)
@@ -98,6 +119,15 @@ func getDuration(key string, def time.Duration) time.Duration {
 func getInt(key string, def int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return def
+}
+
+func getInt64(key string, def int64) int64 {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
 			return n
 		}
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/brandall2021/consorcioabierto/internal/audit"
 	"github.com/brandall2021/consorcioabierto/internal/database/gen"
+	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/httpapi"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/tenancy"
@@ -26,6 +27,7 @@ const (
 type AuthHandlers struct {
 	Manager *identity.AuthManager
 	Audit   *audit.Recorder
+	Docs     documentos.DocsEnv
 }
 
 type loginRequest struct {

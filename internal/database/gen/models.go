@@ -52,6 +52,23 @@ type Consorcio struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Documento struct {
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	ID          pgtype.UUID        `json:"id"`
+	ConsorcioID pgtype.UUID        `json:"consorcio_id"`
+	OwnerType   pgtype.Text        `json:"owner_type"`
+	OwnerID     pgtype.UUID        `json:"owner_id"`
+	Tipo        string             `json:"tipo"`
+	Nombre      string             `json:"nombre"`
+	StorageKey  string             `json:"storage_key"`
+	MimeType    pgtype.Text        `json:"mime_type"`
+	SizeBytes   int64              `json:"size_bytes"`
+	Sha256      string             `json:"sha256"`
+	Antivirus   string             `json:"antivirus"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type IdempotencyKey struct {
 	ID             pgtype.UUID        `json:"id"`
 	TenantID       pgtype.UUID        `json:"tenant_id"`
