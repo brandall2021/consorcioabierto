@@ -39,6 +39,17 @@ type AuditEvent struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
+type ConceptosExpensa struct {
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID pgtype.UUID        `json:"consorcio_id"`
+	ID          pgtype.UUID        `json:"id"`
+	Nombre      string             `json:"nombre"`
+	Categoria   string             `json:"categoria"`
+	Regla       string             `json:"regla"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Consorcio struct {
 	TenantID  pgtype.UUID        `json:"tenant_id"`
 	ID        pgtype.UUID        `json:"id"`
@@ -67,6 +78,21 @@ type Documento struct {
 	Antivirus   string             `json:"antivirus"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Gasto struct {
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID  pgtype.UUID        `json:"consorcio_id"`
+	ID           pgtype.UUID        `json:"id"`
+	ConceptoID   pgtype.UUID        `json:"concepto_id"`
+	ProveedorID  pgtype.UUID        `json:"proveedor_id"`
+	Comprobante  pgtype.Text        `json:"comprobante"`
+	ImporteCents int64              `json:"importe_cents"`
+	Fecha        pgtype.Date        `json:"fecha"`
+	Estado       string             `json:"estado"`
+	DocumentoID  pgtype.UUID        `json:"documento_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 type IdempotencyKey struct {
