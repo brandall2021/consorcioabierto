@@ -18,6 +18,7 @@ var (
 )
 
 var validGastoEstados = map[string]bool{"registrado": true, "pagado": true, "anulado": true}
+var _ = validGastoEstados
 
 type GastoDTO struct {
 	ID             string    `json:"id"`

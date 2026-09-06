@@ -22,6 +22,7 @@ var (
 )
 
 var validConceptoReglas = map[string]bool{"coeficiente": true}
+var _ = validConceptoReglas
 var validConceptoCategorias = map[string]bool{"administracion": true, "servicios": true, "mantenimiento": true, "fondos": true, "otros": true}
 
 type ConceptoDTO struct {
