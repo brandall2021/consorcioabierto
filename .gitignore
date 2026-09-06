@@ -25,3 +25,6 @@ Thumbs.db
 
 # Docs de compilación
 *.log
+
+# Git worktrees
+.worktrees/
