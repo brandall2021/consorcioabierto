@@ -84,6 +84,21 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    ConceptoId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ConsorcioIdWide:
+      name: consorcioId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GastoId:
+      name: gastoId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   headers:
     RequestIdOut:
       schema:
@@ -385,16 +400,36 @@ components:
         created_at: { type: string, format: date-time }
     Gasto:
       type: object
-      required: [id, concepto, importe, fecha, estado]
+      required: [id, consorcio_id, concepto_id, importe_cents, fecha, estado]
       properties:
         id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        concepto_id: { type: string, format: uuid }
+        concepto_nombre: { type: string }
         proveedor_id: { type: [string, "null"], format: uuid }
         comprobante: { type: [string, "null"] }
-        concepto: { type: string }
-        importe: { $ref: "#/components/schemas/Money" }
+        importe_cents: { type: integer, format: int64 }
         fecha: { type: string, format: date }
         estado: { type: string }
         documento_id: { type: [string, "null"], format: uuid }
+    Concepto:
+      type: object
+      required: [id, nombre, categoria, regla]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: [string, "null"], format: uuid }
+        nombre: { type: string }
+        categoria: { type: string }
+        regla: { type: string, description: "regla de distribución: coeficiente" }
+        created_at: { type: string, format: date-time }
+    ConceptoInput:
+      type: object
+      required: [nombre, categoria]
+      properties:
+        nombre: { type: string, maxLength: 100 }
+        categoria:
+          type: string
+          enum: [administracion, servicios, mantenimiento, fondos, otros]
     Proveedor:
       type: object
       required: [id, cuit, razon_social, estado]
@@ -971,12 +1006,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [concepto, importe, fecha]
+              required: [concepto_id, importe_cents, fecha]
               properties:
+                concepto_id: { type: string, format: uuid }
                 proveedor_id: { type: [string, "null"], format: uuid }
                 comprobante: { type: [string, "null"] }
-                concepto: { type: string }
-                importe: { $ref: "#/components/schemas/Money" }
+                importe_cents: { type: integer, format: int64, minimum: 1 }
                 fecha: { type: string, format: date }
                 documento_id: { type: [string, "null"], format: uuid }
       responses:
@@ -986,6 +1021,61 @@ paths:
               schema:
                 $ref: "#/components/schemas/Gasto"
         "422": { $ref: "#/components/responses/Problem" }
+  /consorcios/{id}/conceptos:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: listConceptos
+      tags: [expensas]
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+    post:
+      operationId: createConcepto
+      tags: [expensas]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConceptoInput"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Concepto"
+  /conceptos/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ConceptoId" }
+    get:
+      operationId: getConcepto
+      tags: [expensas]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Concepto"
+  /consorcios/{consorcioId}/gastos/{gastoId}:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
+      - { $ref: "#/components/parameters/GastoId" }
+    get:
+      operationId: getGasto
+      tags: [gastos]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gasto"
   /consorcios/{id}/proveedores:
     parameters:
       - { $ref: "#/components/parameters/ConsorcioId" }

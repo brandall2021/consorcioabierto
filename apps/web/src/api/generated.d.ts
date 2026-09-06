@@ -412,6 +412,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consorcios/{id}/conceptos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        get: operations["listConceptos"];
+        put?: never;
+        post: operations["createConcepto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conceptos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConceptoId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getConcepto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consorcios/{consorcioId}/gastos/{gastoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                gastoId: components["parameters"]["GastoId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getGasto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios/{id}/proveedores": {
         parameters: {
             query?: never;
@@ -847,15 +902,37 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
+            consorcio_id: string;
+            /** Format: uuid */
+            concepto_id: string;
+            concepto_nombre?: string;
+            /** Format: uuid */
             proveedor_id?: string | null;
             comprobante?: string | null;
-            concepto: string;
-            importe: components["schemas"]["Money"];
+            /** Format: int64 */
+            importe_cents: number;
             /** Format: date */
             fecha: string;
             estado: string;
             /** Format: uuid */
             documento_id?: string | null;
+        };
+        Concepto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            consorcio_id?: string | null;
+            nombre: string;
+            categoria: string;
+            /** @description regla de distribución: coeficiente */
+            regla: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        ConceptoInput: {
+            nombre: string;
+            /** @enum {string} */
+            categoria: "administracion" | "servicios" | "mantenimiento" | "fondos" | "otros";
         };
         Proveedor: {
             /** Format: uuid */
@@ -933,6 +1010,9 @@ export interface components {
         DocumentoId: string;
         ComunicadoId: string;
         ReclamoId: string;
+        ConceptoId: string;
+        ConsorcioIdWide: string;
+        GastoId: string;
     };
     requestBodies: never;
     headers: {
@@ -1703,10 +1783,12 @@ export interface operations {
             content: {
                 "application/json": {
                     /** Format: uuid */
+                    concepto_id: string;
+                    /** Format: uuid */
                     proveedor_id?: string | null;
                     comprobante?: string | null;
-                    concepto: string;
-                    importe: components["schemas"]["Money"];
+                    /** Format: int64 */
+                    importe_cents: number;
                     /** Format: date */
                     fecha: string;
                     /** Format: uuid */
@@ -1724,6 +1806,97 @@ export interface operations {
                 };
             };
             422: components["responses"]["Problem"];
+        };
+    };
+    listConceptos: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"];
+                };
+            };
+        };
+    };
+    createConcepto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConceptoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Concepto"];
+                };
+            };
+        };
+    };
+    getConcepto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConceptoId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Concepto"];
+                };
+            };
+        };
+    };
+    getGasto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                gastoId: components["parameters"]["GastoId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gasto"];
+                };
+            };
         };
     };
     listProveedores: {
