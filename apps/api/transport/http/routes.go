@@ -73,4 +73,25 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 			mgmt.Post("/document-upload-intents", h.CreateDocumentUploadIntent)
 		})
 	})
+
+	// Expensas: conceptos con expensas.read/create, gastos con gastos.read/manage.
+	r.Group(func(er chi.Router) {
+		er.Use(RequirePermission(h.Manager, "expensas.read"))
+		er.Get("/consorcios/{id}/conceptos", h.ListConceptos)
+		er.Get("/conceptos/{id}", h.GetConcepto)
+		er.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "expensas.create"))
+			mgmt.Post("/consorcios/{id}/conceptos", h.CreateConcepto)
+		})
+	})
+
+	r.Group(func(gr chi.Router) {
+		gr.Use(RequirePermission(h.Manager, "gastos.read"))
+		gr.Get("/consorcios/{id}/gastos", h.ListGastos)
+		gr.Get("/consorcios/{consorcioId}/gastos/{gastoId}", h.GetGasto)
+		gr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "gastos.manage"))
+			mgmt.Post("/consorcios/{id}/gastos", h.CreateGasto)
+		})
+	})
 }
