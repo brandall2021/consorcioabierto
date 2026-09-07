@@ -11,12 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/brandall2021/consorcioabierto/internal/audit"
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
-	"github.com/brandall2021/consorcioabierto/internal/audit"
 	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
+	"github.com/brandall2021/consorcioabierto/internal/outbox"
 	"github.com/brandall2021/consorcioabierto/internal/server"
 )
 
@@ -62,6 +63,24 @@ func main() {
 	if err != nil {
 		log.Error("config documentos", "error", err)
 		os.Exit(1)
+	}
+
+	workerEnabled := os.Getenv("WORKER_ENABLED")
+	if workerEnabled == "" {
+		workerEnabled = "true"
+	}
+	if workerEnabled != "false" {
+		mailDriver := outbox.MailDriver(&outbox.MockDriver{Log: log})
+		if cfg.MailDriver == "mailpit" {
+			mailDriver = &outbox.MailpitDriver{BaseURL: "http://localhost:8025"}
+		}
+		w := &outbox.Worker{
+			Log:    log,
+			Pool:   pool,
+			Mail:   mailDriver,
+			PDFGen: &outbox.SimplePDFGenerator{},
+		}
+		go w.Run(ctx)
 	}
 
 	r := server.New(log, cfg.Env, identityManager, audit.New(pool), docsEnv)
