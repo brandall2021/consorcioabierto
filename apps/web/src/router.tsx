@@ -5,6 +5,8 @@ import { Auditoria } from '@/pages/auditoria/Auditoria'
 import { Consorcios } from '@/pages/consorcios/Consorcios'
 import { ConsorcioLayout } from '@/pages/consorcios/ConsorcioLayout'
 import { Proveedores } from '@/pages/proveedores/Proveedores'
+import { Liquidaciones } from '@/pages/liquidaciones/Liquidaciones'
+import { LiquidacionWizard } from '@/pages/liquidaciones/LiquidacionWizard'
 import { Unidades } from '@/pages/unidades/Unidades'
 import { Dashboard } from '@/pages/dashboard/Dashboard'
 import { Login } from '@/pages/login/Login'
@@ -50,6 +52,8 @@ export const router = createBrowserRouter([
                   { index: true, element: <Unidades /> },
                   { path: 'unidades', element: <Unidades /> },
                   { path: 'proveedores', element: <Proveedores /> },
+                  { path: 'liquidaciones', element: <Liquidaciones /> },
+                  { path: 'liquidaciones/:liquidacionId', element: <LiquidacionWizard /> },
                 ],
               },
               { path: 'auditoria', element: <Auditoria /> },

@@ -68,6 +68,12 @@ export function ConsorcioLayout() {
             >
               Proveedores
             </NavLink>
+            <NavLink
+              to={`/app/consorcios/${consorcioId}/liquidaciones`}
+              className={tabClass}
+            >
+              Liquidaciones
+            </NavLink>
           </nav>
 
           <div className="mt-4">
