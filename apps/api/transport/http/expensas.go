@@ -168,12 +168,17 @@ func (h *AuthHandlers) GetGasto(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandlers) writeExpensaError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
-	case errors.Is(err, expensas.ErrConceptoInvalid), errors.Is(err, expensas.ErrConceptoReglaInvalid), errors.Is(err, expensas.ErrGastoInvalid):
+	case errors.Is(err, expensas.ErrConceptoInvalid), errors.Is(err, expensas.ErrConceptoReglaInvalid), errors.Is(err, expensas.ErrGastoInvalid),
+		errors.Is(err, expensas.ErrLiquidacionInvalid), errors.Is(err, expensas.ErrLiquidacionTransicionInvalida):
 		httpapi.WriteProblem(w, r, http.StatusBadRequest, "invalid_request", "Solicitud inválida", err.Error(), nil)
-	case errors.Is(err, expensas.ErrConceptoNotFound), errors.Is(err, expensas.ErrGastoNotFound):
+	case errors.Is(err, expensas.ErrConceptoNotFound), errors.Is(err, expensas.ErrGastoNotFound), errors.Is(err, expensas.ErrLiquidacionNotFound):
 		httpapi.WriteProblem(w, r, http.StatusNotFound, "not_found", "Recurso no encontrado", err.Error(), nil)
-	case errors.Is(err, expensas.ErrConceptoDuplicate):
-		httpapi.WriteProblem(w, r, http.StatusConflict, "conflict", "Conflict", err.Error(), nil)
+	case errors.Is(err, expensas.ErrConceptoDuplicate), errors.Is(err, expensas.ErrLiquidacionConflict), errors.Is(err, expensas.ErrIdempotencyConflict):
+		httpapi.WriteProblem(w, r, http.StatusConflict, "conflict", "Conflicto", err.Error(), nil)
+	case errors.Is(err, expensas.ErrLiquidacionVersionMismatch):
+		httpapi.WriteProblem(w, r, http.StatusPreconditionFailed, "version_mismatch", "Versión no coincide", err.Error(), nil)
+	case errors.Is(err, expensas.ErrLiquidacionSinGastos), errors.Is(err, expensas.ErrLiquidacionSinUFs):
+		httpapi.WriteProblem(w, r, http.StatusUnprocessableEntity, "unprocessable", "No procesable", err.Error(), nil)
 	default:
 		slog.Error("expensas", "error", err)
 		httpapi.WriteProblem(w, r, http.StatusInternalServerError, "internal_error", "Error interno", err.Error(), nil)

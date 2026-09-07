@@ -422,8 +422,9 @@ func PublicarLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquid
 }
 
 // AnularLiquidacion revierte los cargos pendientes (si había) y transiciona a
-// 'anulada'. El motivo de la anulación se audita en el handler (Task 10).
-func AnularLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquidacionID string, expectedVersion int) (LiquidacionDTO, error) {
+// 'anulada'. El motivo de la anulación (Ruling 10, spec H3.2) es informativo
+// aquí: se audita en el handler (Task 10), no se persiste en la liquidación.
+func AnularLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquidacionID string, expectedVersion int, motivo string) (LiquidacionDTO, error) {
 	var cid, lid pgtype.UUID
 	if err := cid.Scan(consorcioID); err != nil {
 		return LiquidacionDTO{}, ErrLiquidacionInvalid
