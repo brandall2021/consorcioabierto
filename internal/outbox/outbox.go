@@ -119,6 +119,9 @@ func (w *Worker) processPublicacion(ctx context.Context, q *db.Queries, ev db.Ou
 		return fmt.Errorf("payload inválido: %w", err)
 	}
 
+	if w.PDFGen == nil {
+		return fmt.Errorf("outbox: PDF generator no configurado")
+	}
 	pdfBytes, err := w.PDFGen.Generate(payload)
 	if err != nil {
 		return fmt.Errorf("generar PDF: %w", err)
