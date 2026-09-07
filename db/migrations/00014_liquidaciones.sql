@@ -22,9 +22,7 @@ CREATE TABLE IF NOT EXISTS liquidaciones (
     CONSTRAINT liquidaciones_estado_check
         CHECK (estado IN ('borrador','calculada','confirmada','publicada','cerrada','anulada')),
     CONSTRAINT liquidaciones_version_check CHECK (version >= 1),
-    CONSTRAINT liquidaciones_vencimientos_check CHECK (vencimiento_2 IS NULL OR vencimiento_2 >= vencimiento_1),
-    CONSTRAINT liquidaciones_anulada_motivo_check
-        CHECK (estado != 'anulada') -- motivos se registran en audit_events
+    CONSTRAINT liquidaciones_vencimientos_check CHECK (vencimiento_2 IS NULL OR vencimiento_2 >= vencimiento_1)
 );
 
 -- Una liquidación activa por período; anulada/cerrada liberan la combinación.
