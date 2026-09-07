@@ -103,3 +103,18 @@ WHERE tenant_id = app.current_tenant_id()
   AND id = sqlc.arg('id')::UUID
   AND estado = sqlc.arg('estado_actual')::TEXT
   AND version = sqlc.arg('expected_version')::INT;
+
+-- name: DeleteLiquidacionGastos :exec
+DELETE FROM liquidacion_gastos
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = sqlc.arg('liquidacion_id')::UUID;
+
+-- name: DeleteLiquidacionItems :exec
+DELETE FROM liquidacion_items
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = sqlc.arg('liquidacion_id')::UUID;
+
+-- name: DeleteLiquidacionUnidades :exec
+DELETE FROM liquidacion_unidades
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = sqlc.arg('liquidacion_id')::UUID;

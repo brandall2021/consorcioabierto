@@ -77,6 +77,39 @@ func (q *Queries) CreateLiquidacion(ctx context.Context, arg CreateLiquidacionPa
 	return i, err
 }
 
+const deleteLiquidacionGastos = `-- name: DeleteLiquidacionGastos :exec
+DELETE FROM liquidacion_gastos
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = $1::UUID
+`
+
+func (q *Queries) DeleteLiquidacionGastos(ctx context.Context, liquidacionID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteLiquidacionGastos, liquidacionID)
+	return err
+}
+
+const deleteLiquidacionItems = `-- name: DeleteLiquidacionItems :exec
+DELETE FROM liquidacion_items
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = $1::UUID
+`
+
+func (q *Queries) DeleteLiquidacionItems(ctx context.Context, liquidacionID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteLiquidacionItems, liquidacionID)
+	return err
+}
+
+const deleteLiquidacionUnidades = `-- name: DeleteLiquidacionUnidades :exec
+DELETE FROM liquidacion_unidades
+WHERE tenant_id = app.current_tenant_id()
+  AND liquidacion_id = $1::UUID
+`
+
+func (q *Queries) DeleteLiquidacionUnidades(ctx context.Context, liquidacionID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteLiquidacionUnidades, liquidacionID)
+	return err
+}
+
 const getLiquidacion = `-- name: GetLiquidacion :one
 SELECT tenant_id, consorcio_id, id, periodo, vencimiento_1, vencimiento_2, estado, version,
        total_gastos_cents, total_distribuido_cents, unidades_alcanzadas, created_at, updated_at

@@ -19,7 +19,7 @@ const (
 	maxRetries     = 5
 	pollInterval   = 2 * time.Second
 	batchSize      = 10
-	eventPublished = "liquidacion.publicada"
+	EventPublished = "liquidacion.publicada"
 )
 
 var _ = maxRetries
@@ -96,7 +96,7 @@ func (w *Worker) processEvent(ctx context.Context, ev db.OutboxEvent) error {
 	q := db.New(tx)
 
 	switch ev.EventType {
-	case eventPublished:
+	case EventPublished:
 		if err := w.processPublicacion(ctx, q, ev); err != nil {
 			return err
 		}
