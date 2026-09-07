@@ -60,7 +60,7 @@ components:
       required: true
       schema: { type: string, format: uuid }
     LiquidacionId:
-      name: id
+      name: liquidacionId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -383,7 +383,7 @@ components:
               error: { type: string }
     Liquidacion:
       type: object
-      required: [id, consorcio_id, periodo, estado, version]
+      required: [id, consorcio_id, periodo, vencimiento_1, estado, version, total_gastos_cents, total_distribuido_cents, unidades_alcanzadas, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         consorcio_id: { type: string, format: uuid }
@@ -398,6 +398,39 @@ components:
         total_distribuido_cents: { type: integer, format: int64 }
         unidades_alcanzadas: { type: integer }
         created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LiquidacionInput:
+      type: object
+      required: [periodo, vencimiento_1]
+      properties:
+        periodo: { type: string, pattern: "^[0-9]{6}$" }
+        vencimiento_1: { type: string, format: date }
+        vencimiento_2: { type: [string, "null"], format: date }
+    LiquidacionGasto:
+      type: object
+      required: [liquidacion_id, gasto_id, concepto_id, importe_cents]
+      properties:
+        liquidacion_id: { type: string, format: uuid }
+        gasto_id: { type: string, format: uuid }
+        concepto_id: { type: string, format: uuid }
+        importe_cents: { type: integer, format: int64 }
+    LiquidacionItem:
+      type: object
+      required: [liquidacion_id, concepto_id, regla_aplicada, importe_cents]
+      properties:
+        liquidacion_id: { type: string, format: uuid }
+        concepto_id: { type: string, format: uuid }
+        regla_aplicada: { type: string }
+        importe_cents: { type: integer, format: int64 }
+    LiquidacionUnidad:
+      type: object
+      required: [liquidacion_id, unidad_id, codigo, coeficiente, total_cents]
+      properties:
+        liquidacion_id: { type: string, format: uuid }
+        unidad_id: { type: string, format: uuid }
+        codigo: { type: string }
+        coeficiente: { type: number }
+        total_cents: { type: integer, format: int64 }
     Gasto:
       type: object
       required: [id, consorcio_id, concepto_id, importe_cents, fecha, estado]
@@ -843,12 +876,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [periodo, vencimiento_1]
-              properties:
-                periodo: { type: string, pattern: "^[0-9]{6}$" }
-                vencimiento_1: { type: string, format: date }
-                vencimiento_2: { type: [string, "null"], format: date }
+              $ref: "#/components/schemas/LiquidacionInput"
       responses:
         "201":
           content:
@@ -856,8 +884,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
-  /liquidaciones/{id}:
+  /consorcios/{consorcioId}/liquidaciones/{liquidacionId}:
     parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
       - { $ref: "#/components/parameters/LiquidacionId" }
     get:
       operationId: getLiquidacion
@@ -888,55 +917,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
-  /liquidaciones/{id}/calcular:
+  /consorcios/{consorcioId}/liquidaciones/{liquidacionId}/calcular:
     parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
       - { $ref: "#/components/parameters/LiquidacionId" }
     post:
       operationId: calcularLiquidacion
       tags: [expensas]
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/IfMatch" }
       responses:
         "200":
-          description: Preview reproducible con advertencias.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  total_gastos_cents: { type: integer, format: int64 }
-                  total_distribuido_cents: { type: integer, format: int64 }
-                  diferencia_cents: { type: integer, format: int64 }
-                  coeficiente_total: { type: string }
-                  unidades_alcanzadas: { type: integer }
-                  advertencias:
-                    type: array
-                    items: { type: string }
-                  unidades:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        codigo_uf: { type: string }
-                        total_cents: { type: integer, format: int64 }
+                $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
-  /liquidaciones/{id}/confirmar:
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+  /consorcios/{consorcioId}/liquidaciones/{liquidacionId}/confirmar:
     parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
       - { $ref: "#/components/parameters/LiquidacionId" }
     post:
       operationId: confirmarLiquidacion
       tags: [expensas]
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
-        - $ref: "#/components/parameters/IfMatch"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [expected_version]
-              properties:
-                expected_version: { type: integer }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/IfMatch" }
       responses:
         "200":
           description: Congela snapshot y genera cargos.
@@ -945,38 +954,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
-  /liquidaciones/{id}/publicar:
+        "412": { $ref: "#/components/responses/Problem" }
+  /consorcios/{consorcioId}/liquidaciones/{liquidacionId}/publicar:
     parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
       - { $ref: "#/components/parameters/LiquidacionId" }
     post:
       operationId: publicarLiquidacion
       tags: [expensas]
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/IfMatch" }
       responses:
-        "202":
-          description: Documentos generados y notificaciones encoladas por el worker.
+        "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
-  /liquidaciones/{id}/anular:
+        "412": { $ref: "#/components/responses/Problem" }
+  /consorcios/{consorcioId}/liquidaciones/{liquidacionId}/anular:
     parameters:
+      - { $ref: "#/components/parameters/ConsorcioIdWide" }
       - { $ref: "#/components/parameters/LiquidacionId" }
     post:
       operationId: anularLiquidacion
       tags: [expensas]
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - { $ref: "#/components/parameters/IfMatch" }
       requestBody:
         content:
           application/json:
             schema:
               type: object
-              required: [motivo]
               properties:
-                motivo: { type: string, minLength: 10 }
+                motivo: { type: string }
       responses:
         "200":
           description: Asientos compensatorios generados; nada se borra.
@@ -985,6 +997,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Liquidacion"
         "409": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
 
   /consorcios/{id}/gastos:
     parameters:

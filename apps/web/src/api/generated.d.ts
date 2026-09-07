@@ -304,12 +304,13 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/liquidaciones/{id}": {
+    "/consorcios/{consorcioId}/liquidaciones/{liquidacionId}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -322,12 +323,13 @@ export interface paths {
         patch: operations["updateLiquidacion"];
         trace?: never;
     };
-    "/liquidaciones/{id}/calcular": {
+    "/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/calcular": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -340,12 +342,13 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/liquidaciones/{id}/confirmar": {
+    "/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/confirmar": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -358,12 +361,13 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/liquidaciones/{id}/publicar": {
+    "/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/publicar": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -376,12 +380,13 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/liquidaciones/{id}/anular": {
+    "/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/anular": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -884,19 +889,57 @@ export interface components {
             /** @description YYYYMM */
             periodo: string;
             /** Format: date */
-            vencimiento_1?: string;
+            vencimiento_1: string;
             /** Format: date */
             vencimiento_2?: string | null;
             /** @enum {string} */
             estado: "borrador" | "calculada" | "confirmada" | "publicada" | "cerrada" | "anulada";
             version: number;
             /** Format: int64 */
-            total_gastos_cents?: number;
+            total_gastos_cents: number;
             /** Format: int64 */
-            total_distribuido_cents?: number;
-            unidades_alcanzadas?: number;
+            total_distribuido_cents: number;
+            unidades_alcanzadas: number;
             /** Format: date-time */
-            created_at?: string;
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        LiquidacionInput: {
+            periodo: string;
+            /** Format: date */
+            vencimiento_1: string;
+            /** Format: date */
+            vencimiento_2?: string | null;
+        };
+        LiquidacionGasto: {
+            /** Format: uuid */
+            liquidacion_id: string;
+            /** Format: uuid */
+            gasto_id: string;
+            /** Format: uuid */
+            concepto_id: string;
+            /** Format: int64 */
+            importe_cents: number;
+        };
+        LiquidacionItem: {
+            /** Format: uuid */
+            liquidacion_id: string;
+            /** Format: uuid */
+            concepto_id: string;
+            regla_aplicada: string;
+            /** Format: int64 */
+            importe_cents: number;
+        };
+        LiquidacionUnidad: {
+            /** Format: uuid */
+            liquidacion_id: string;
+            /** Format: uuid */
+            unidad_id: string;
+            codigo: string;
+            coeficiente: number;
+            /** Format: int64 */
+            total_cents: number;
         };
         Gasto: {
             /** Format: uuid */
@@ -1542,13 +1585,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    periodo: string;
-                    /** Format: date */
-                    vencimiento_1: string;
-                    /** Format: date */
-                    vencimiento_2?: string | null;
-                };
+                "application/json": components["schemas"]["LiquidacionInput"];
             };
         };
         responses: {
@@ -1568,7 +1605,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -1591,7 +1629,8 @@ export interface operations {
                 "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
@@ -1623,39 +1662,27 @@ export interface operations {
             header?: {
                 /** @description Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks. */
                 "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Preview reproducible con advertencias. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** Format: int64 */
-                        total_gastos_cents?: number;
-                        /** Format: int64 */
-                        total_distribuido_cents?: number;
-                        /** Format: int64 */
-                        diferencia_cents?: number;
-                        coeficiente_total?: string;
-                        unidades_alcanzadas?: number;
-                        advertencias?: string[];
-                        unidades?: {
-                            codigo_uf?: string;
-                            /** Format: int64 */
-                            total_cents?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["Liquidacion"];
                 };
             };
             409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
+            422: components["responses"]["Problem"];
         };
     };
     confirmarLiquidacion: {
@@ -1667,17 +1694,12 @@ export interface operations {
                 "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    expected_version: number;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Congela snapshot y genera cargos. */
             200: {
@@ -1689,6 +1711,7 @@ export interface operations {
                 };
             };
             409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
         };
     };
     publicarLiquidacion: {
@@ -1697,16 +1720,17 @@ export interface operations {
             header?: {
                 /** @description Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks. */
                 "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Documentos generados y notificaciones encoladas por el worker. */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1715,24 +1739,25 @@ export interface operations {
                 };
             };
             409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
         };
     };
     anularLiquidacion: {
         parameters: {
             query?: never;
             header?: {
-                /** @description Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks. */
-                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
-                id: components["parameters"]["LiquidacionId"];
+                consorcioId: components["parameters"]["ConsorcioIdWide"];
+                liquidacionId: components["parameters"]["LiquidacionId"];
             };
             cookie?: never;
         };
         requestBody?: {
             content: {
                 "application/json": {
-                    motivo: string;
+                    motivo?: string;
                 };
             };
         };
@@ -1747,6 +1772,7 @@ export interface operations {
                 };
             };
             409: components["responses"]["Problem"];
+            412: components["responses"]["Problem"];
         };
     };
     listGastos: {
