@@ -202,6 +202,56 @@ func (q *Queries) InsertCharge(ctx context.Context, arg InsertChargeParams) (Cha
 	return i, err
 }
 
+const listMorosidadByConsorcio = `-- name: ListMorosidadByConsorcio :many
+SELECT u.id AS unidad_id,
+       u.codigo AS unidad_codigo,
+       SUM(c.saldo_cents)::BIGINT AS saldo_vencido_cents,
+       COUNT(*)::BIGINT AS cantidad_cargos,
+       MIN(c.due_date) AS vencido_desde
+FROM charges c
+JOIN unidades u ON u.tenant_id = c.tenant_id AND u.id = c.unidad_id
+WHERE c.tenant_id = app.current_tenant_id()
+  AND u.consorcio_id = $1::UUID
+  AND c.due_date < CURRENT_DATE
+  AND c.saldo_cents > 0
+GROUP BY u.id, u.codigo
+ORDER BY saldo_vencido_cents DESC, u.codigo ASC
+`
+
+type ListMorosidadByConsorcioRow struct {
+	UnidadID          pgtype.UUID `json:"unidad_id"`
+	UnidadCodigo      string      `json:"unidad_codigo"`
+	SaldoVencidoCents int64       `json:"saldo_vencido_cents"`
+	CantidadCargos    int64       `json:"cantidad_cargos"`
+	VencidoDesde      interface{} `json:"vencido_desde"`
+}
+
+func (q *Queries) ListMorosidadByConsorcio(ctx context.Context, consorcioID pgtype.UUID) ([]ListMorosidadByConsorcioRow, error) {
+	rows, err := q.db.Query(ctx, listMorosidadByConsorcio, consorcioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMorosidadByConsorcioRow{}
+	for rows.Next() {
+		var i ListMorosidadByConsorcioRow
+		if err := rows.Scan(
+			&i.UnidadID,
+			&i.UnidadCodigo,
+			&i.SaldoVencidoCents,
+			&i.CantidadCargos,
+			&i.VencidoDesde,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateChargeSaldo = `-- name: UpdateChargeSaldo :exec
 UPDATE charges SET saldo_cents = $1::BIGINT
 WHERE tenant_id = app.current_tenant_id() AND id = $2::UUID

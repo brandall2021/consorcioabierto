@@ -174,6 +174,24 @@ func RevertirCargo(ctx context.Context, q *db.Queries, chargeID, unidadID, curre
 	return accountEntryDTO(entry), nil
 }
 
+// ListEntriesByUnidad devuelve el libro de movimientos de una UF como DTOs.
+func ListEntriesByUnidad(ctx context.Context, q *db.Queries, unidadID string) ([]AccountEntryDTO, error) {
+	uid, err := parseUUID(unidadID)
+	if err != nil {
+		return nil, ErrCargoInvalido
+	}
+
+	entries, err := q.GetEntriesByUnidad(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AccountEntryDTO, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, accountEntryDTO(e))
+	}
+	return out, nil
+}
+
 func parseLiquidacionID(l *string) (pgtype.UUID, error) {
 	if l == nil {
 		return pgtype.UUID{}, nil

@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPortalHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios": {
         parameters: {
             query?: never;
@@ -526,6 +542,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consorcios/{id}/cobranzas/mercado-pago": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createMercadoPagoCobranza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consorcios/{id}/morosidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getMorosidad"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cobranzas/{id}/acreditar": {
         parameters: {
             query?: never;
@@ -544,6 +596,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cobranzas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getCobranza"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cobranzas/{id}/recibo.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getCobranzaRecibo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consorcios/{id}/unidades/{unidadId}/cuenta-corriente": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+                id: components["parameters"]["UnidadId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getCuentaCorriente"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cobranzas/{id}/asignaciones": {
         parameters: {
             query?: never;
@@ -556,6 +663,24 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ajustarAsignaciones"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cobranzas/{id}/revertir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revertirCobranza"];
         delete?: never;
         options?: never;
         head?: never;
@@ -644,6 +769,24 @@ export interface paths {
         get: operations["listReclamos"];
         put?: never;
         post: operations["createReclamo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reclamos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ReclamoId"];
+            };
+            cookie?: never;
+        };
+        get: operations["getReclamo"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -771,6 +914,64 @@ export interface components {
         AuthResponse: {
             user: components["schemas"]["User"];
             memberships: components["schemas"]["Membership"][];
+        };
+        PortalConsorcioSummary: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            estado: string;
+            /** Format: int64 */
+            saldo_vencido_cents: number;
+            /** Format: int64 */
+            cargos_vencidos: number;
+            vencido_desde: string;
+        };
+        PortalReceiptSummary: {
+            /** Format: uuid */
+            consorcio_id: string;
+            consorcio_nombre: string;
+            /** Format: uuid */
+            cobranza_id: string;
+            fecha: string;
+            /** Format: int64 */
+            importe_cents: number;
+            estado: string;
+            /** Format: int64 */
+            saldo_a_favor_cents: number;
+            /** @description RFC3339 timestamp. */
+            created_at: string;
+        };
+        PortalComunicadoSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            consorcio_id: string;
+            consorcio_nombre: string;
+            titulo: string;
+            estado: string;
+            /** @description RFC3339 timestamp. */
+            publicado_at: string;
+        };
+        PortalReclamoSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            consorcio_id: string;
+            /** Format: uuid */
+            unidad_id: string;
+            categoria: string;
+            estado: string;
+            texto: string;
+            /** @description RFC3339 timestamp. */
+            created_at: string;
+        };
+        PortalHome: {
+            consorcios: components["schemas"]["PortalConsorcioSummary"][];
+            recibos_recientes: components["schemas"]["PortalReceiptSummary"][];
+            comunicados_recientes: components["schemas"]["PortalComunicadoSummary"][];
+            reclamos_recientes: components["schemas"]["PortalReclamoSummary"][];
+            /** Format: int64 */
+            total_saldo_vencido_cents: number;
         };
         MfaSetup: {
             /** @description Secret TOTP */
@@ -999,6 +1200,16 @@ export interface components {
             referencia?: string | null;
             /** @enum {string} */
             estado: "pendiente_revision" | "acreditado" | "rechazado" | "revertido";
+            /** Format: int64 */
+            saldo_a_favor_cents?: number;
+        };
+        MercadoPagoCobranza: {
+            cobranza: components["schemas"]["Cobranza"];
+            /** Format: uri */
+            checkout_url: string;
+            /** @enum {string} */
+            provider: "mercadopago" | "mock";
+            preference_id: string;
         };
         Reclamo: {
             /** Format: uuid */
@@ -1012,6 +1223,34 @@ export interface components {
             responsable_id?: string | null;
             /** Format: date-time */
             created_at?: string;
+        };
+        ReclamoMensaje: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            reclamo_id: string;
+            texto: string;
+            /** Format: uuid */
+            adjunto_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ReclamoTransicion: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            reclamo_id: string;
+            accion: string;
+            motivo?: string | null;
+            /** Format: uuid */
+            responsable_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ReclamoDetalle: {
+            reclamo: components["schemas"]["Reclamo"];
+            mensajes: components["schemas"]["ReclamoMensaje"][];
+            transiciones: components["schemas"]["ReclamoTransicion"][];
         };
         Comunicado: {
             /** Format: uuid */
@@ -1320,6 +1559,34 @@ export interface operations {
                     "application/json": components["schemas"]["Membership"][];
                 };
             };
+        };
+    };
+    getPortalHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen del portal del tenant activo. */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestIdOut"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PortalHome"];
+                        meta: {
+                            /** Format: uuid */
+                            request_id: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Problem"];
         };
     };
     listConsorcios: {
@@ -2047,10 +2314,6 @@ export interface operations {
                     unidad_id: string;
                     /** Format: date */
                     fecha: string;
-                    /** @enum {string} */
-                    canal?: "efectivo" | "transferencia" | "deposito" | "tarjeta" | "cajero" | "otros";
-                    importe: components["schemas"]["Money"];
-                    referencia?: string | null;
                 };
             };
         };
@@ -2065,6 +2328,86 @@ export interface operations {
             };
             /** @description Referencia duplicada; requiere resolución. */
             409: components["responses"]["Problem"];
+        };
+    };
+    createMercadoPagoCobranza: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    unidad_id: string;
+                    /** Format: date */
+                    fecha: string;
+                    importe: components["schemas"]["Money"];
+                    referencia?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Cobranza creada con enlace de checkout de Mercado Pago. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MercadoPagoCobranza"];
+                };
+            };
+            409: components["responses"]["Problem"];
+        };
+    };
+    getMorosidad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ConsorcioId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen de deuda vencida por UF. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            unidad_id?: string;
+                            unidad_codigo?: string;
+                            /** Format: int64 */
+                            saldo_vencido_cents?: number;
+                            /** Format: int64 */
+                            cantidad_cargos?: number;
+                            /** Format: date */
+                            vencido_desde?: string;
+                        }[];
+                        meta?: {
+                            /** Format: uuid */
+                            request_id?: string;
+                            /** Format: int64 */
+                            total_saldo_cents?: number;
+                            /** Format: int64 */
+                            total_cargos_vencidos?: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
         };
     };
     acreditarCobranza: {
@@ -2115,6 +2458,108 @@ export interface operations {
             409: components["responses"]["Problem"];
         };
     };
+    getCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cobranza con detalle de asignaciones y saldo a favor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cobranza?: components["schemas"]["Cobranza"];
+                        asignaciones?: {
+                            /** Format: uuid */
+                            charge_id?: string;
+                            /** Format: int64 */
+                            amount_cents?: number;
+                        }[];
+                        /** Format: int64 */
+                        saldo_a_favor_cents?: number;
+                    };
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
+    getCobranzaRecibo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF descargable del recibo de la cobranza. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            404: components["responses"]["Problem"];
+        };
+    };
+    getCuentaCorriente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["UnidadId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Libro de movimientos de una UF. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            unidad_id?: string;
+                            tipo?: string;
+                            /** Format: date */
+                            fecha_efectiva?: string;
+                            /** Format: int64 */
+                            debit_cents?: number;
+                            /** Format: int64 */
+                            credit_cents?: number;
+                            currency?: string;
+                            referencia?: string | null;
+                        }[];
+                        meta?: {
+                            /** Format: uuid */
+                            request_id?: string;
+                            /** Format: int64 */
+                            saldo_cents?: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
+        };
+    };
     ajustarAsignaciones: {
         parameters: {
             query?: never;
@@ -2146,7 +2591,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: unknown;
+                        cobranza?: components["schemas"]["Cobranza"];
+                        asignaciones?: {
+                            /** Format: uuid */
+                            charge_id?: string;
+                            /** Format: int64 */
+                            amount_cents?: number;
+                        }[];
+                        /** Format: int64 */
+                        saldo_a_favor_cents?: number;
+                    };
+                };
+            };
+            409: components["responses"]["Problem"];
+        };
+    };
+    revertirCobranza: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Obligatorio en confirmar, publicar, cobranzas, asignaciones y webhooks. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                id: components["parameters"]["CobranzaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cobranza revertida con asignaciones restauradas. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        cobranza?: components["schemas"]["Cobranza"];
+                        asignaciones?: {
+                            /** Format: uuid */
+                            charge_id?: string;
+                            /** Format: int64 */
+                            amount_cents?: number;
+                        }[];
+                        /** Format: int64 */
+                        saldo_a_favor_cents?: number;
                     };
                 };
             };
@@ -2344,6 +2833,27 @@ export interface operations {
                 };
             };
             403: components["responses"]["Problem"];
+        };
+    };
+    getReclamo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ReclamoId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReclamoDetalle"];
+                };
+            };
         };
     };
     addReclamoMensaje: {

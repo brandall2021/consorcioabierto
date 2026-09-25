@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider, useAuth } from './AuthProvider'
 import { Login } from '@/pages/login/Login'
@@ -39,18 +39,24 @@ function StatusProbe() {
   return <output data-testid="status">{status}</output>
 }
 
+function LocationProbe() {
+	const location = useLocation()
+	return <output data-testid="location">{location.pathname}</output>
+}
+
 function renderApp() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/login']}>
-        <AuthProvider>
-          <StatusProbe />
-          <Login />
-        </AuthProvider>
-      </MemoryRouter>
+        <MemoryRouter initialEntries={['/login']}>
+          <AuthProvider>
+            <StatusProbe />
+            <LocationProbe />
+            <Login />
+          </AuthProvider>
+        </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -90,6 +96,7 @@ describe('AuthProvider', () => {
       body: { membership_id: 'm1' },
     }))
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('authenticated'))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/portal'))
   })
 
   it('login con varias membresías espera selección de tenant', async () => {

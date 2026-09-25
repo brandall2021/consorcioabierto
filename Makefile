@@ -36,6 +36,21 @@ api:           ## Ejecuta el API en modo desarrollo
 worker:        ## Ejecuta el worker (outbox, pdf, envíos)
 	go run ./apps/worker
 
+backup-db:     ## Genera un backup lógico de la base de datos
+	bash scripts/db-maintenance.sh backup
+
+restore-db:    ## Restaura un backup lógico (usa FILE=archivo.dump)
+	bash scripts/db-maintenance.sh restore "$(FILE)"
+
+perf-smoke:    ## Smoke de performance básico contra endpoints críticos
+	bash scripts/perf-smoke.sh --base-url "$(if $(BASE_URL),$(BASE_URL),http://localhost:8090)" --repetitions "$(if $(REPS),$(REPS),5)"
+
+restore-rehearsal: ## Ensayo de restore contra una base destino
+	bash scripts/restore-rehearsal.sh --backup-name "$(if $(BACKUP_NAME),$(BACKUP_NAME),restore-rehearsal.dump)" --target-database-url "$(TARGET_DATABASE_URL)"
+
+security-check: ## Preflight de seguridad para production
+	bash scripts/security-preflight.sh
+
 test-back:     ## Tests backend con -race
 	go test -race ./...
 
@@ -46,6 +61,13 @@ lint:          ## Lint backend y web
 build:         ## Compila backend y web
 	go build ./...
 	cd apps/web && npm run build
+
+go-live-check: ## Ejecuta la checklist de salida a producción
+	go test ./...
+	go build ./...
+	golangci-lint run ./...
+	cd apps/web && npm run build && npm run test
+	make check-openapi
 
 ## ── Frontend ───────────────────────────────────────────────
 dev-web:       ## Vite dev server

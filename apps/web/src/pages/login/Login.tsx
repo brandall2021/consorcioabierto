@@ -24,7 +24,7 @@ export function Login() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      navigate('/app', { replace: true })
+      navigate('/portal', { replace: true })
     }
   }, [status, navigate])
 

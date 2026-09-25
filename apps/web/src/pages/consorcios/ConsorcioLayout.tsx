@@ -54,10 +54,10 @@ export function ConsorcioLayout() {
             {data.cuit && <p className="mt-1 text-sm text-gray-500">CUIT {data.cuit}</p>}
           </header>
 
-          <nav className="mt-4 flex gap-2 border-b" aria-label="Secciones del consorcio">
-            <NavLink
-              to={`/app/consorcios/${consorcioId}/unidades`}
-              end
+			<nav className="mt-4 flex gap-2 border-b" aria-label="Secciones del consorcio">
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/unidades`}
+					end
               className={tabClass}
             >
               Unidades
@@ -68,13 +68,43 @@ export function ConsorcioLayout() {
             >
               Proveedores
             </NavLink>
-            <NavLink
-              to={`/app/consorcios/${consorcioId}/liquidaciones`}
-              className={tabClass}
-            >
-              Liquidaciones
-            </NavLink>
-          </nav>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/liquidaciones`}
+					className={tabClass}
+				>
+					Liquidaciones
+				</NavLink>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/cobranzas`}
+					className={tabClass}
+				>
+					Cobranzas
+				</NavLink>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/comunicados`}
+					className={tabClass}
+				>
+					Comunicados
+				</NavLink>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/reclamos`}
+					className={tabClass}
+				>
+					Reclamos
+				</NavLink>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/cuenta-corriente`}
+					className={tabClass}
+				>
+					Cuenta corriente
+				</NavLink>
+				<NavLink
+					to={`/app/consorcios/${consorcioId}/morosidad`}
+					className={tabClass}
+				>
+					Morosidad
+				</NavLink>
+			</nav>
 
           <div className="mt-4">
             <Outlet />

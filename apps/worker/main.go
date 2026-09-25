@@ -11,6 +11,8 @@ import (
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
+	"github.com/brandall2021/consorcioabierto/internal/observability"
+	"github.com/brandall2021/consorcioabierto/internal/outbox"
 )
 
 func main() {
@@ -25,6 +27,13 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	shutdownTracing, err := observability.InitTracing("consorcioabierto-worker", cfg.Env)
+	if err != nil {
+		log.Error("tracing", "error", err)
+		os.Exit(1)
+	}
+	defer func() { _ = shutdownTracing(context.Background()) }()
+
 	pool, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Error("base de datos", "error", err)
@@ -32,7 +41,17 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Fase posterior: consumo del outbox (documentos, notificaciones, envíos).
+	mailDriver := outbox.MailDriver(&outbox.MockDriver{Log: log})
+	if cfg.MailDriver == "mailpit" {
+		mailDriver = &outbox.MailpitDriver{BaseURL: "http://localhost:8025"}
+	}
+	w := &outbox.Worker{
+		Log:    log,
+		Pool:   pool,
+		Mail:   mailDriver,
+		PDFGen: &outbox.SimplePDFGenerator{},
+	}
+	go w.Run(ctx)
 	log.Info("worker iniciado", "env", cfg.Env)
 	<-ctx.Done()
 	log.Info("worker detenido")

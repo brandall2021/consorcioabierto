@@ -2,7 +2,7 @@
 
 SaaS multiempresa para administración de consorcios de Argentina. Un backend Go (monolito modular), una SPA React y PostgreSQL 16 con aislamiento multi-tenant por RLS.
 
-> **Estado:** Fase 1 — Fundación. H1.1 a H1.3 completas: scaffolding, identidad con MFA y límite de intentos. Ver [`docs/roadmap.md`](./docs/roadmap.md).
+> **Estado:** Fase 6 — Piloto y hardening completada. Fases posteriores requieren spec y threat model propios. Ver [`docs/roadmap.md`](./docs/roadmap.md).
 
 ## Stack
 
@@ -35,15 +35,15 @@ La fuente principal de verdad es [`consorcioabierto-especificacion-mejorada-para
 
 Especificación v2.0 como fuente de verdad, ADRs 0001–0010, mapa de dominios, ERD, matriz de permisos, OpenAPI inicial y backlog. Commit `007ca97`.
 
-### Fase 1 — Fundación (en curso)
+### Fase 1 a 5 — Completas
 
-- **H1.1 Scaffolding ✅** (`19a59fa`): módulos Go (`internal/{config,logger,database,httpapi,server}` + 10 dominios), `apps/api` (migrate + http), `apps/worker`, `apps/web` (Vite + React + Tailwind + Router + TanStack Query + openapi-fetch), Makefile, Compose (Postgres + MinIO + Mailpit), `.env.example`, CI.
-- **H1.2 Migraciones + RLS + auth JWT ✅** (`14c4ce2`, `bbc7d69`): esquema de identidad (`users`, `tenants`, `memberships`, `roles`, `membership_roles`, `role_scopes`, `sessions`, `refresh_tokens`, `idempotency_keys`), RLS por tenant con contexto `app.current_user_id()`/`app.current_tenant_id()`, rol `consorcio_app` no dueño. Login Argon2id, access token JWT RS256 (10 min), refresh token opaco con rotación por familia, detección de reuso (revoca toda la familia), logout que revoca refresh + sesión.
-- **H1.3 MFA TOTP + límite de intentos ✅** (`98cc0bb`): login en dos pasos (`mfa_token` de 5 min, purpose `mfa`), endpoints `/auth/mfa/{setup,confirm,verify,disable}`, límite de 5 intentos fallidos (password o TOTP) por email+IP en 15 min persistido en `login_attempts` vía funciones SECURITY DEFINER.
-- **H1.4 Tenancy — pendiente:** membresías, select-tenant, permisos por membresía (caché), middleware de autorización.
-- **H1.5 Auditoría** y **H1.6 Shell web** — pendientes.
+- Fundación, identidad, tenancy, auditoría, shell web, cobranzas, cuenta corriente, portal, comunicaciones, reclamos y observabilidad ya implementados y verificados.
 
-Ver [`docs/roadmap.md`](./docs/roadmap.md) para el resto del backlog. Regla: una fase y una historia pequeña por vez; no avanzar sin aceptación explícita.
+### Fase 6 — Piloto y hardening ✅
+
+- Accesibilidad base, backup/restore, smoke de performance, preflight de seguridad, checklist de go-live y rehearsal de restore.
+
+Ver [`docs/roadmap.md`](./docs/roadmap.md) para el resto del backlog. Las fases posteriores requieren spec y threat model propios.
 
 ## Arquitectura
 

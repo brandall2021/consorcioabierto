@@ -32,3 +32,18 @@ ORDER BY created_at ASC, id ASC;
 SELECT tenant_id, unidad_id, id, liquidacion_id, concepto, due_date, total_cents, saldo_cents, created_at
 FROM charges
 WHERE tenant_id = app.current_tenant_id() AND liquidacion_id = sqlc.arg('liquidacion_id')::UUID;
+
+-- name: ListMorosidadByConsorcio :many
+SELECT u.id AS unidad_id,
+       u.codigo AS unidad_codigo,
+       SUM(c.saldo_cents)::BIGINT AS saldo_vencido_cents,
+       COUNT(*)::BIGINT AS cantidad_cargos,
+       MIN(c.due_date) AS vencido_desde
+FROM charges c
+JOIN unidades u ON u.tenant_id = c.tenant_id AND u.id = c.unidad_id
+WHERE c.tenant_id = app.current_tenant_id()
+  AND u.consorcio_id = sqlc.arg('consorcio_id')::UUID
+  AND c.due_date < CURRENT_DATE
+  AND c.saldo_cents > 0
+GROUP BY u.id, u.codigo
+ORDER BY saldo_vencido_cents DESC, u.codigo ASC;

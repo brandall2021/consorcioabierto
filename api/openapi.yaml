@@ -228,6 +228,87 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Membership"
+    PortalConsorcioSummary:
+      type: object
+      required: [id, nombre, estado, saldo_vencido_cents, cargos_vencidos, vencido_desde]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        estado: { type: string }
+        saldo_vencido_cents:
+          type: integer
+          format: int64
+        cargos_vencidos:
+          type: integer
+          format: int64
+        vencido_desde:
+          type: string
+    PortalReceiptSummary:
+      type: object
+      required: [consorcio_id, consorcio_nombre, cobranza_id, fecha, importe_cents, estado, saldo_a_favor_cents, created_at]
+      properties:
+        consorcio_id: { type: string, format: uuid }
+        consorcio_nombre: { type: string }
+        cobranza_id: { type: string, format: uuid }
+        fecha: { type: string }
+        importe_cents:
+          type: integer
+          format: int64
+        estado: { type: string }
+        saldo_a_favor_cents:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          description: RFC3339 timestamp.
+    PortalComunicadoSummary:
+      type: object
+      required: [id, consorcio_id, consorcio_nombre, titulo, estado, publicado_at]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        consorcio_nombre: { type: string }
+        titulo: { type: string }
+        estado: { type: string }
+        publicado_at:
+          type: string
+          description: RFC3339 timestamp.
+    PortalReclamoSummary:
+      type: object
+      required: [id, consorcio_id, unidad_id, categoria, estado, texto, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        unidad_id: { type: string, format: uuid }
+        categoria: { type: string }
+        estado: { type: string }
+        texto: { type: string }
+        created_at:
+          type: string
+          description: RFC3339 timestamp.
+    PortalHome:
+      type: object
+      required: [consorcios, recibos_recientes, comunicados_recientes, reclamos_recientes, total_saldo_vencido_cents]
+      properties:
+        consorcios:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortalConsorcioSummary"
+        recibos_recientes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortalReceiptSummary"
+        comunicados_recientes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortalComunicadoSummary"
+        reclamos_recientes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortalReclamoSummary"
+        total_saldo_vencido_cents:
+          type: integer
+          format: int64
     MfaSetup:
       type: object
       required: [secret, otpauth_url]
@@ -486,6 +567,16 @@ components:
         estado:
           type: string
           enum: [pendiente_revision, acreditado, rechazado, revertido]
+        saldo_a_favor_cents: { type: integer, format: int64 }
+    MercadoPagoCobranza:
+      type: object
+      required: [cobranza, checkout_url, provider, preference_id]
+      properties:
+        cobranza:
+          $ref: "#/components/schemas/Cobranza"
+        checkout_url: { type: string, format: uri }
+        provider: { type: string, enum: [mercadopago, mock] }
+        preference_id: { type: string }
     Reclamo:
       type: object
       required: [id, unidad_id, categoria, estado]
@@ -498,6 +589,39 @@ components:
           enum: [abierto, en_progreso, resuelto, cerrado]
         responsable_id: { type: [string, "null"], format: uuid }
         created_at: { type: string, format: date-time }
+    ReclamoMensaje:
+      type: object
+      required: [id, reclamo_id, texto, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        reclamo_id: { type: string, format: uuid }
+        texto: { type: string }
+        adjunto_id: { type: [string, "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+    ReclamoTransicion:
+      type: object
+      required: [id, reclamo_id, accion, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        reclamo_id: { type: string, format: uuid }
+        accion: { type: string }
+        motivo: { type: [string, "null"] }
+        responsable_id: { type: [string, "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+    ReclamoDetalle:
+      type: object
+      required: [reclamo, mensajes, transiciones]
+      properties:
+        reclamo:
+          $ref: "#/components/schemas/Reclamo"
+        mensajes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReclamoMensaje"
+        transiciones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReclamoTransicion"
     Comunicado:
       type: object
       required: [id, titulo, estado]
@@ -689,6 +813,33 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Membership"
+
+  /portal:
+    get:
+      operationId: getPortalHome
+      tags: [auth]
+      responses:
+        "200":
+          description: Resumen del portal del tenant activo.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestIdOut"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PortalHome"
+                  meta:
+                    type: object
+                    required: [request_id]
+                    properties:
+                      request_id:
+                        type: string
+                        format: uuid
+        "401": { $ref: "#/components/responses/Problem" }
 
   /consorcios:
     get:
@@ -1168,11 +1319,11 @@ paths:
               properties:
                 unidad_id: { type: string, format: uuid }
                 fecha: { type: string, format: date }
-                canal:
-                  type: string
-                  enum: [efectivo, transferencia, deposito, tarjeta, cajero, otros]
-                importe: { $ref: "#/components/schemas/Money" }
-                referencia: { type: [string, "null"] }
+        canal:
+          type: string
+          enum: [efectivo, transferencia, deposito, tarjeta, cajero, mercadopago, otros]
+        importe: { $ref: "#/components/schemas/Money" }
+        referencia: { type: [string, "null"] }
       responses:
         "201":
           content:
@@ -1182,6 +1333,64 @@ paths:
         "409":
           description: Referencia duplicada; requiere resolución.
           $ref: "#/components/responses/Problem"
+  /consorcios/{id}/cobranzas/mercado-pago:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    post:
+      operationId: createMercadoPagoCobranza
+      tags: [cobranzas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unidad_id, fecha, importe]
+              properties:
+                unidad_id: { type: string, format: uuid }
+                fecha: { type: string, format: date }
+                importe: { $ref: "#/components/schemas/Money" }
+                referencia: { type: [string, "null"] }
+      responses:
+        "201":
+          description: Cobranza creada con enlace de checkout de Mercado Pago.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MercadoPagoCobranza"
+        "409": { $ref: "#/components/responses/Problem" }
+  /consorcios/{id}/morosidad:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+    get:
+      operationId: getMorosidad
+      tags: [cobranzas]
+      responses:
+        "200":
+          description: Resumen de deuda vencida por UF.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        unidad_id: { type: string, format: uuid }
+                        unidad_codigo: { type: string }
+                        saldo_vencido_cents: { type: integer, format: int64 }
+                        cantidad_cargos: { type: integer, format: int64 }
+                        vencido_desde: { type: string, format: date }
+                  meta:
+                    type: object
+                    properties:
+                      request_id: { type: string, format: uuid }
+                      total_saldo_cents: { type: integer, format: int64 }
+                      total_cargos_vencidos: { type: integer, format: int64 }
+        "400": { $ref: "#/components/responses/Problem" }
   /cobranzas/{id}/acreditar:
     parameters:
       - { $ref: "#/components/parameters/CobranzaId" }
@@ -1224,6 +1433,81 @@ paths:
                         amount_cents: { type: integer, format: int64 }
                   saldo_a_favor_cents: { type: integer, format: int64 }
         "409": { $ref: "#/components/responses/Problem" }
+  /cobranzas/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/CobranzaId" }
+    get:
+      operationId: getCobranza
+      tags: [cobranzas]
+      responses:
+        "200":
+          description: Cobranza con detalle de asignaciones y saldo a favor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cobranza:
+                    $ref: "#/components/schemas/Cobranza"
+                  asignaciones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        charge_id: { type: string, format: uuid }
+                        amount_cents: { type: integer, format: int64 }
+                  saldo_a_favor_cents: { type: integer, format: int64 }
+        "404": { $ref: "#/components/responses/Problem" }
+  /cobranzas/{id}/recibo.pdf:
+    parameters:
+      - { $ref: "#/components/parameters/CobranzaId" }
+    get:
+      operationId: getCobranzaRecibo
+      tags: [cobranzas]
+      responses:
+        "200":
+          description: PDF descargable del recibo de la cobranza.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404": { $ref: "#/components/responses/Problem" }
+  /consorcios/{id}/unidades/{unidadId}/cuenta-corriente:
+    parameters:
+      - { $ref: "#/components/parameters/ConsorcioId" }
+      - { $ref: "#/components/parameters/UnidadId" }
+    get:
+      operationId: getCuentaCorriente
+      tags: [cobranzas]
+      responses:
+        "200":
+          description: Libro de movimientos de una UF.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        unidad_id: { type: string, format: uuid }
+                        tipo: { type: string }
+                        fecha_efectiva: { type: string, format: date }
+                        debit_cents: { type: integer, format: int64 }
+                        credit_cents: { type: integer, format: int64 }
+                        currency: { type: string }
+                        referencia: { type: [string, "null"] }
+                  meta:
+                    type: object
+                    properties:
+                      request_id: { type: string, format: uuid }
+                      saldo_cents: { type: integer, format: int64 }
+        "404": { $ref: "#/components/responses/Problem" }
+        "400": { $ref: "#/components/responses/Problem" }
   /cobranzas/{id}/asignaciones:
     parameters:
       - { $ref: "#/components/parameters/CobranzaId" }
@@ -1253,7 +1537,44 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
+                properties:
+                  cobranza:
+                    $ref: "#/components/schemas/Cobranza"
+                  asignaciones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        charge_id: { type: string, format: uuid }
+                        amount_cents: { type: integer, format: int64 }
+                  saldo_a_favor_cents: { type: integer, format: int64 }
+        "409": { $ref: "#/components/responses/Problem" }
+  /cobranzas/{id}/revertir:
+    parameters:
+      - { $ref: "#/components/parameters/CobranzaId" }
+    post:
+      operationId: revertirCobranza
+      tags: [cobranzas]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Cobranza revertida con asignaciones restauradas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cobranza:
+                    $ref: "#/components/schemas/Cobranza"
+                  asignaciones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        charge_id: { type: string, format: uuid }
+                        amount_cents: { type: integer, format: int64 }
+                  saldo_a_favor_cents: { type: integer, format: int64 }
         "409": { $ref: "#/components/responses/Problem" }
 
   /documentos/{id}/download-url:
@@ -1382,6 +1703,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Reclamo"
         "403": { $ref: "#/components/responses/Problem" }
+  /reclamos/{id}:
+    parameters:
+      - { $ref: "#/components/parameters/ReclamoId" }
+    get:
+      operationId: getReclamo
+      tags: [reclamos]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReclamoDetalle"
   /reclamos/{id}/mensajes:
     parameters:
       - { $ref: "#/components/parameters/ReclamoId" }
