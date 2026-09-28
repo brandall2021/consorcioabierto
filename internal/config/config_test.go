@@ -4,11 +4,12 @@ import "testing"
 
 func baseConfig() *Config {
 	return &Config{
-		Env:           "production",
-		DatabaseURL:   "postgres://user:pass@localhost:5432/db",
-		StorageDriver: "s3",
-		MailDriver:    "smtp",
-		PSPDriver:     "mercadopago",
+		Env:                      "production",
+		DatabaseURL:              "postgres://user:pass@localhost:5432/db",
+		StorageDriver:            "s3",
+		MailDriver:               "smtp",
+		PSPDriver:                "mercadopago",
+		MercadoPagoWebhookSecret: "secret",
 	}
 }
 
@@ -29,6 +30,7 @@ func TestValidateProductionRechazaDriversSimulados(t *testing.T) {
 		{"psp mock", func(c *Config) { c.PSPDriver = "mock" }},
 		{"storage mock", func(c *Config) { c.StorageDriver = "mock" }},
 		{"mail mailpit", func(c *Config) { c.MailDriver = "mailpit" }},
+		{"mercado pago sin secret", func(c *Config) { c.MercadoPagoWebhookSecret = "" }},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

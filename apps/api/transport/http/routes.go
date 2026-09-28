@@ -6,6 +6,7 @@ import (
 
 // RegisterAuthRoutes registra el sub-router de identidad del contrato OpenAPI.
 func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
+	r.Post("/webhooks/mercado-pago", h.MercadoPagoWebhook)
 	r.Post("/auth/login", h.Login)
 	r.Post("/auth/select-tenant", h.SelectTenant)
 	r.Post("/auth/refresh", h.Refresh)

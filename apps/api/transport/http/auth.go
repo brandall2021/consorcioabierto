@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/brandall2021/consorcioabierto/internal/audit"
+	"github.com/brandall2021/consorcioabierto/internal/cobranzas"
 	"github.com/brandall2021/consorcioabierto/internal/database/gen"
 	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/httpapi"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
+	"github.com/brandall2021/consorcioabierto/internal/observability"
 	"github.com/brandall2021/consorcioabierto/internal/tenancy"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -25,9 +27,11 @@ const (
 
 // AuthHandlers expone las rutas de identidad.
 type AuthHandlers struct {
-	Manager *identity.AuthManager
-	Audit   *audit.Recorder
-	Docs     documentos.DocsEnv
+	Manager                  *identity.AuthManager
+	Audit                    *audit.Recorder
+	Docs                     documentos.DocsEnv
+	PSP                      cobranzas.PSP
+	MercadoPagoWebhookSecret string
 }
 
 type loginRequest struct {
@@ -48,6 +52,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.Manager.Login(r.Context(), req.Email, req.Password, clientIP(r))
 	if err != nil {
+		observability.IncLoginFailure()
 		h.recordAudit(r, audit.Event{
 			Accion:      "auth.login.failed",
 			RecursoType: "user",

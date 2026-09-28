@@ -19,7 +19,7 @@ func newTestServer() http.Handler {
 		MaxUpload: 10 << 20,
 		SignedTTL: 5 * time.Minute,
 	}
-	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil, nil, docsEnv)
+	return New(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", nil, nil, docsEnv, nil, "")
 }
 
 func TestHealthzRoot(t *testing.T) {

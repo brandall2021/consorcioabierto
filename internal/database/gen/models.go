@@ -8,6 +8,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AccountEntry struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	UnidadID      pgtype.UUID        `json:"unidad_id"`
+	ID            pgtype.UUID        `json:"id"`
+	Tipo          string             `json:"tipo"`
+	FechaEfectiva pgtype.Date        `json:"fecha_efectiva"`
+	DebitCents    int64              `json:"debit_cents"`
+	CreditCents   int64              `json:"credit_cents"`
+	Currency      string             `json:"currency"`
+	Referencia    pgtype.Text        `json:"referencia"`
+	ReversaDeID   pgtype.UUID        `json:"reversa_de_id"`
+	ChargeID      pgtype.UUID        `json:"charge_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 type AppMetum struct {
 	Key       string             `json:"key"`
 	Value     string             `json:"value"`
@@ -37,6 +52,32 @@ type AuditEvent struct {
 	UserAgent       pgtype.Text        `json:"user_agent"`
 	Diff            []byte             `json:"diff"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type Charge struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	UnidadID      pgtype.UUID        `json:"unidad_id"`
+	ID            pgtype.UUID        `json:"id"`
+	LiquidacionID pgtype.UUID        `json:"liquidacion_id"`
+	Concepto      string             `json:"concepto"`
+	DueDate       pgtype.Date        `json:"due_date"`
+	TotalCents    int64              `json:"total_cents"`
+	SaldoCents    int64              `json:"saldo_cents"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type Comunicado struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID   pgtype.UUID        `json:"consorcio_id"`
+	ID            pgtype.UUID        `json:"id"`
+	Titulo        string             `json:"titulo"`
+	Cuerpo        string             `json:"cuerpo"`
+	Destinatarios string             `json:"destinatarios"`
+	Estado        string             `json:"estado"`
+	PublicadoAt   pgtype.Timestamptz `json:"publicado_at"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ConceptosExpensa struct {
@@ -123,6 +164,59 @@ type ImportJob struct {
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Liquidacion struct {
+	TenantID              pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID           pgtype.UUID        `json:"consorcio_id"`
+	ID                    pgtype.UUID        `json:"id"`
+	Periodo               string             `json:"periodo"`
+	Vencimiento1          pgtype.Date        `json:"vencimiento_1"`
+	Vencimiento2          pgtype.Date        `json:"vencimiento_2"`
+	Estado                string             `json:"estado"`
+	Version               int32              `json:"version"`
+	TotalGastosCents      int64              `json:"total_gastos_cents"`
+	TotalDistribuidoCents int64              `json:"total_distribuido_cents"`
+	UnidadesAlcanzadas    int32              `json:"unidades_alcanzadas"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LiquidacionGasto struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	LiquidacionID pgtype.UUID        `json:"liquidacion_id"`
+	GastoID       pgtype.UUID        `json:"gasto_id"`
+	ConceptoID    pgtype.UUID        `json:"concepto_id"`
+	ImporteCents  int64              `json:"importe_cents"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type LiquidacionItem struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	LiquidacionID pgtype.UUID        `json:"liquidacion_id"`
+	ConceptoID    pgtype.UUID        `json:"concepto_id"`
+	ReglaAplicada string             `json:"regla_aplicada"`
+	ImporteCents  int64              `json:"importe_cents"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type LiquidacionUnidad struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	LiquidacionID pgtype.UUID        `json:"liquidacion_id"`
+	UnidadID      pgtype.UUID        `json:"unidad_id"`
+	Codigo        string             `json:"codigo"`
+	Coeficiente   pgtype.Numeric     `json:"coeficiente"`
+	TotalCents    int64              `json:"total_cents"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type LiquidacionUnidadItem struct {
+	TenantID            pgtype.UUID        `json:"tenant_id"`
+	LiquidacionID       pgtype.UUID        `json:"liquidacion_id"`
+	LiquidacionUnidadID pgtype.UUID        `json:"liquidacion_unidad_id"`
+	ConceptoID          pgtype.UUID        `json:"concepto_id"`
+	ImporteCents        int64              `json:"importe_cents"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
 type LoginAttempt struct {
 	ID              pgtype.UUID        `json:"id"`
 	EmailNormalized string             `json:"email_normalized"`
@@ -144,6 +238,45 @@ type MembershipRole struct {
 	ID           pgtype.UUID `json:"id"`
 	MembershipID pgtype.UUID `json:"membership_id"`
 	RoleID       pgtype.UUID `json:"role_id"`
+}
+
+type OutboxEvent struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	ID            pgtype.UUID        `json:"id"`
+	CorrelationID pgtype.UUID        `json:"correlation_id"`
+	EventType     string             `json:"event_type"`
+	Payload       []byte             `json:"payload"`
+	Estado        string             `json:"estado"`
+	Intentos      int32              `json:"intentos"`
+	NextAttemptAt pgtype.Timestamptz `json:"next_attempt_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type Payment struct {
+	TenantID        pgtype.UUID        `json:"tenant_id"`
+	UnidadID        pgtype.UUID        `json:"unidad_id"`
+	ID              pgtype.UUID        `json:"id"`
+	Fecha           pgtype.Date        `json:"fecha"`
+	Canal           string             `json:"canal"`
+	ImporteCents    int64              `json:"importe_cents"`
+	Referencia      pgtype.Text        `json:"referencia"`
+	Estado          string             `json:"estado"`
+	IdemKey         string             `json:"idem_key"`
+	MotivoRechazo   pgtype.Text        `json:"motivo_rechazo"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	PspProvider     pgtype.Text        `json:"psp_provider"`
+	PspPreferenceID pgtype.Text        `json:"psp_preference_id"`
+	PspCheckoutUrl  pgtype.Text        `json:"psp_checkout_url"`
+}
+
+type PaymentAllocation struct {
+	TenantID    pgtype.UUID        `json:"tenant_id"`
+	PaymentID   pgtype.UUID        `json:"payment_id"`
+	ChargeID    pgtype.UUID        `json:"charge_id"`
+	AmountCents int64              `json:"amount_cents"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type Persona struct {
@@ -169,6 +302,52 @@ type Proveedore struct {
 	Estado           string             `json:"estado"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PspIntent struct {
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ID           pgtype.UUID        `json:"id"`
+	PaymentID    pgtype.UUID        `json:"payment_id"`
+	Provider     string             `json:"provider"`
+	PreferenceID string             `json:"preference_id"`
+	Status       string             `json:"status"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Reclamo struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID   pgtype.UUID        `json:"consorcio_id"`
+	UnidadID      pgtype.UUID        `json:"unidad_id"`
+	ID            pgtype.UUID        `json:"id"`
+	Categoria     string             `json:"categoria"`
+	Texto         string             `json:"texto"`
+	Estado        string             `json:"estado"`
+	ResponsableID pgtype.UUID        `json:"responsable_id"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ReclamoMensaje struct {
+	TenantID  pgtype.UUID        `json:"tenant_id"`
+	ReclamoID pgtype.UUID        `json:"reclamo_id"`
+	ID        pgtype.UUID        `json:"id"`
+	Texto     string             `json:"texto"`
+	AdjuntoID pgtype.UUID        `json:"adjunto_id"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReclamoTransicione struct {
+	TenantID      pgtype.UUID        `json:"tenant_id"`
+	ReclamoID     pgtype.UUID        `json:"reclamo_id"`
+	ID            pgtype.UUID        `json:"id"`
+	Accion        string             `json:"accion"`
+	Motivo        pgtype.Text        `json:"motivo"`
+	ResponsableID pgtype.UUID        `json:"responsable_id"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
 type RefreshToken struct {
