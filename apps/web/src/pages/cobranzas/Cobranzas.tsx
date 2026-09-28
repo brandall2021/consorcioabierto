@@ -308,16 +308,17 @@ export function Cobranzas() {
 				{cobranzas.length > 0 && (
 					<div className="overflow-x-auto rounded-lg border bg-white">
 						<table className="w-full text-left text-sm">
-							<thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-								<tr>
-									<th className="px-3 py-2">Fecha</th>
-									<th className="px-3 py-2">UF</th>
-							<th className="px-3 py-2">Importe</th>
-							<th className="px-3 py-2">Saldo a favor</th>
-							<th className="px-3 py-2">Canal</th>
-							<th className="px-3 py-2">Referencia</th>
-							<th className="px-3 py-2">Estado</th>
-							<th className="px-3 py-2"></th>
+						<thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+							<tr>
+								<th className="px-3 py-2">Fecha</th>
+								<th className="px-3 py-2">UF</th>
+						<th className="px-3 py-2">Importe</th>
+						<th className="px-3 py-2">Saldo a favor</th>
+						<th className="px-3 py-2">Canal</th>
+						<th className="px-3 py-2">PSP</th>
+						<th className="px-3 py-2">Referencia</th>
+						<th className="px-3 py-2">Estado</th>
+						<th className="px-3 py-2"></th>
 						</tr>
 					</thead>
 					<tbody className="divide-y">
@@ -328,6 +329,15 @@ export function Cobranzas() {
 								<td className="px-3 py-2 text-gray-600">{formatMoney(c.importe.amount_cents)}</td>
 								<td className="px-3 py-2 text-gray-600">{formatMoney(c.saldo_a_favor_cents ?? 0)}</td>
 								<td className="px-3 py-2 text-gray-600">{canalLabels[(c.canal ?? 'otros') as CobranzaCanal]}</td>
+								<td className="px-3 py-2 text-gray-600">
+									{c.psp_provider ? (
+										<span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+											{c.psp_provider}
+										</span>
+									) : (
+										'—'
+									)}
+								</td>
 								<td className="px-3 py-2 text-gray-600">{c.referencia ?? '—'}</td>
 								<td className="px-3 py-2"><Badge tone={estadoTone[c.estado] ?? 'gray'}>{c.estado}</Badge></td>
 							<td className="px-3 py-2 text-right">
@@ -423,7 +433,24 @@ export function Cobranzas() {
 								<p className="text-xs uppercase tracking-wide text-gray-500">Saldo a favor</p>
 								<p className="font-medium">{formatMoney(detalleCobranza.saldo_a_favor_cents ?? 0)}</p>
 							</div>
+							<div>
+								<p className="text-xs uppercase tracking-wide text-gray-500">PSP</p>
+								<p className="font-medium">
+									{detalleCobranza.psp_provider ? (
+										<Badge tone="blue">{detalleCobranza.psp_provider}</Badge>
+									) : (
+										'—'
+									)}
+								</p>
+							</div>
 						</div>
+
+						{detalleCobranza.psp_preference_id && (
+							<div className="rounded-md border bg-gray-50 px-3 py-2 text-xs text-gray-600">
+								<p className="uppercase tracking-wide text-gray-500">Referencia Mercado Pago</p>
+								<p className="mt-1 font-mono">{detalleCobranza.psp_preference_id}</p>
+							</div>
+						)}
 
 						<div>
 							<p className="text-xs uppercase tracking-wide text-gray-500">Asignaciones</p>

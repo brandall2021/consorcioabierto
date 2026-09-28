@@ -111,6 +111,17 @@ func (f *fakeMercadoPagoDBTX) QueryRow(_ context.Context, query string, args ...
 			pgtype.Text{String: "", Valid: false},
 			pgtype.Text{String: "", Valid: false},
 		}}
+	case strings.Contains(query, "INSERT INTO psp_intents"):
+		return fakeRow{values: []any{
+			stubUUID("tenant-1"),
+			stubUUID("intent-1"),
+			stubUUID("payment-1"),
+			"mercadopago",
+			"pref-1",
+			"created",
+			stubTime(),
+			stubTime(),
+		}}
 	default:
 		return fakeRow{err: pgx.ErrNoRows}
 	}

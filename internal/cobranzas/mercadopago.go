@@ -105,6 +105,14 @@ func CreateMercadoPagoCobranza(ctx context.Context, q *db.Queries, consorcioID, 
 	}); err != nil {
 		return MercadoPagoCobranzaDTO{}, err
 	}
+	if _, err := q.CreatePspIntent(ctx, db.CreatePspIntentParams{
+		PaymentID:    parseUUIDMust(item.ID),
+		Provider:     "mercadopago",
+		PreferenceID: checkout.PreferenceID,
+		Status:       "created",
+	}); err != nil {
+		return MercadoPagoCobranzaDTO{}, err
+	}
 	return MercadoPagoCobranzaDTO{
 		Cobranza:     item,
 		CheckoutURL:  checkout.CheckoutURL,

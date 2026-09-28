@@ -52,6 +52,9 @@ type CobranzaDTO struct {
 	Referencia       *string   `json:"referencia"`
 	Estado           string    `json:"estado"`
 	SaldoAFavorCents int64     `json:"saldo_a_favor_cents"`
+	PSPProvider      *string   `json:"psp_provider"`
+	PSPPreferenceID  *string   `json:"psp_preference_id"`
+	PSPCheckoutURL   *string   `json:"psp_checkout_url"`
 	CreatedAt        time.Time `json:"created_at"`
 }
 
@@ -141,6 +144,9 @@ func cobranzaDTO(row db.Payment, allocations []db.PaymentAllocation) CobranzaDTO
 		Referencia:       textPtrOrNil(row.Referencia),
 		Estado:           row.Estado,
 		SaldoAFavorCents: saldoAFavorFromPayment(row, allocations),
+		PSPProvider:      textPtrOrNil(row.PspProvider),
+		PSPPreferenceID:  textPtrOrNil(row.PspPreferenceID),
+		PSPCheckoutURL:   textPtrOrNil(row.PspCheckoutUrl),
 		CreatedAt:        row.CreatedAt.Time,
 	}
 	return dto

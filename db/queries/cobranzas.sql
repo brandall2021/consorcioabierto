@@ -25,6 +25,29 @@ SET psp_provider = sqlc.narg(psp_provider)::TEXT,
 WHERE tenant_id = app.current_tenant_id()
   AND id = sqlc.arg(id)::UUID;
 
+-- name: CreatePspIntent :one
+INSERT INTO psp_intents (tenant_id, payment_id, provider, preference_id, status)
+VALUES (app.current_tenant_id(), sqlc.arg(payment_id)::UUID, sqlc.arg(provider)::TEXT, sqlc.arg(preference_id)::TEXT, sqlc.arg(status)::TEXT)
+ON CONFLICT (tenant_id, payment_id) DO UPDATE
+SET provider = EXCLUDED.provider,
+    preference_id = EXCLUDED.preference_id,
+    status = EXCLUDED.status,
+    updated_at = now()
+RETURNING tenant_id, id, payment_id, provider, preference_id, status, created_at, updated_at;
+
+-- name: GetPspIntentByPreferenceID :one
+SELECT tenant_id, id, payment_id, provider, preference_id, status, created_at, updated_at
+FROM psp_intents
+WHERE tenant_id = app.current_tenant_id()
+  AND preference_id = sqlc.arg(preference_id)::TEXT;
+
+-- name: UpdatePspIntentStatus :exec
+UPDATE psp_intents
+SET status = sqlc.arg(status)::TEXT,
+    updated_at = now()
+WHERE tenant_id = app.current_tenant_id()
+  AND preference_id = sqlc.arg(preference_id)::TEXT;
+
 -- name: GetCobranza :one
 SELECT tenant_id, unidad_id, id, fecha, canal, importe_cents, referencia, estado, idem_key, motivo_rechazo, created_by, created_at, psp_provider, psp_preference_id, psp_checkout_url
 FROM payments

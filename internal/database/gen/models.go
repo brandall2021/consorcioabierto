@@ -304,6 +304,17 @@ type Proveedore struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
+type PspIntent struct {
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ID           pgtype.UUID        `json:"id"`
+	PaymentID    pgtype.UUID        `json:"payment_id"`
+	Provider     string             `json:"provider"`
+	PreferenceID string             `json:"preference_id"`
+	Status       string             `json:"status"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Reclamo struct {
 	TenantID      pgtype.UUID        `json:"tenant_id"`
 	ConsorcioID   pgtype.UUID        `json:"consorcio_id"`

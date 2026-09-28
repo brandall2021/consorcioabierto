@@ -62,6 +62,45 @@ func (q *Queries) CreateCobranza(ctx context.Context, arg CreateCobranzaParams) 
 	return i, err
 }
 
+const createPspIntent = `-- name: CreatePspIntent :one
+INSERT INTO psp_intents (tenant_id, payment_id, provider, preference_id, status)
+VALUES (app.current_tenant_id(), $1::UUID, $2::TEXT, $3::TEXT, $4::TEXT)
+ON CONFLICT (tenant_id, payment_id) DO UPDATE
+SET provider = EXCLUDED.provider,
+    preference_id = EXCLUDED.preference_id,
+    status = EXCLUDED.status,
+    updated_at = now()
+RETURNING tenant_id, id, payment_id, provider, preference_id, status, created_at, updated_at
+`
+
+type CreatePspIntentParams struct {
+	PaymentID    pgtype.UUID `json:"payment_id"`
+	Provider     string      `json:"provider"`
+	PreferenceID string      `json:"preference_id"`
+	Status       string      `json:"status"`
+}
+
+func (q *Queries) CreatePspIntent(ctx context.Context, arg CreatePspIntentParams) (PspIntent, error) {
+	row := q.db.QueryRow(ctx, createPspIntent,
+		arg.PaymentID,
+		arg.Provider,
+		arg.PreferenceID,
+		arg.Status,
+	)
+	var i PspIntent
+	err := row.Scan(
+		&i.TenantID,
+		&i.ID,
+		&i.PaymentID,
+		&i.Provider,
+		&i.PreferenceID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deletePaymentAllocationsByPayment = `-- name: DeletePaymentAllocationsByPayment :execrows
 DELETE FROM payment_allocations
 WHERE tenant_id = app.current_tenant_id()
@@ -102,6 +141,29 @@ func (q *Queries) GetCobranza(ctx context.Context, id pgtype.UUID) (Payment, err
 		&i.PspProvider,
 		&i.PspPreferenceID,
 		&i.PspCheckoutUrl,
+	)
+	return i, err
+}
+
+const getPspIntentByPreferenceID = `-- name: GetPspIntentByPreferenceID :one
+SELECT tenant_id, id, payment_id, provider, preference_id, status, created_at, updated_at
+FROM psp_intents
+WHERE tenant_id = app.current_tenant_id()
+  AND preference_id = $1::TEXT
+`
+
+func (q *Queries) GetPspIntentByPreferenceID(ctx context.Context, preferenceID string) (PspIntent, error) {
+	row := q.db.QueryRow(ctx, getPspIntentByPreferenceID, preferenceID)
+	var i PspIntent
+	err := row.Scan(
+		&i.TenantID,
+		&i.ID,
+		&i.PaymentID,
+		&i.Provider,
+		&i.PreferenceID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -310,5 +372,23 @@ func (q *Queries) UpdateCobranzaMercadoPago(ctx context.Context, arg UpdateCobra
 		arg.PspCheckoutUrl,
 		arg.ID,
 	)
+	return err
+}
+
+const updatePspIntentStatus = `-- name: UpdatePspIntentStatus :exec
+UPDATE psp_intents
+SET status = $1::TEXT,
+    updated_at = now()
+WHERE tenant_id = app.current_tenant_id()
+  AND preference_id = $2::TEXT
+`
+
+type UpdatePspIntentStatusParams struct {
+	Status       string `json:"status"`
+	PreferenceID string `json:"preference_id"`
+}
+
+func (q *Queries) UpdatePspIntentStatus(ctx context.Context, arg UpdatePspIntentStatusParams) error {
+	_, err := q.db.Exec(ctx, updatePspIntentStatus, arg.Status, arg.PreferenceID)
 	return err
 }

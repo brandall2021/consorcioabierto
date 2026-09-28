@@ -568,6 +568,9 @@ components:
           type: string
           enum: [pendiente_revision, acreditado, rechazado, revertido]
         saldo_a_favor_cents: { type: integer, format: int64 }
+        psp_provider: { type: [string, "null"] }
+        psp_preference_id: { type: [string, "null"] }
+        psp_checkout_url: { type: [string, "null"], format: uri }
     MercadoPagoCobranza:
       type: object
       required: [cobranza, checkout_url, provider, preference_id]
@@ -577,6 +580,19 @@ components:
         checkout_url: { type: string, format: uri }
         provider: { type: string, enum: [mercadopago, mock] }
         preference_id: { type: string }
+    MercadoPagoWebhook:
+      type: object
+      required: [preference_id, status]
+      properties:
+        preference_id: { type: string }
+        status:
+          type: string
+          enum: [approved, rejected, pending, cancelled, authorized]
+    MercadoPagoWebhookResult:
+      type: object
+      required: [processed]
+      properties:
+        processed: { type: boolean }
     Reclamo:
       type: object
       required: [id, unidad_id, categoria, estado]
@@ -1333,6 +1349,29 @@ paths:
         "409":
           description: Referencia duplicada; requiere resolución.
           $ref: "#/components/responses/Problem"
+  /webhooks/mercado-pago:
+    post:
+      operationId: mercadoPagoWebhook
+      tags: [webhooks]
+      parameters:
+        - name: X-Mercado-Pago-Webhook-Secret
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MercadoPagoWebhook"
+      responses:
+        "200":
+          description: Webhook procesado o ignorado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MercadoPagoWebhookResult"
+        "401": { $ref: "#/components/responses/Problem" }
   /consorcios/{id}/cobranzas/mercado-pago:
     parameters:
       - { $ref: "#/components/parameters/ConsorcioId" }

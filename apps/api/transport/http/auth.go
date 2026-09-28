@@ -27,10 +27,11 @@ const (
 
 // AuthHandlers expone las rutas de identidad.
 type AuthHandlers struct {
-	Manager *identity.AuthManager
-	Audit   *audit.Recorder
-	Docs    documentos.DocsEnv
-	PSP     cobranzas.PSP
+	Manager                  *identity.AuthManager
+	Audit                    *audit.Recorder
+	Docs                     documentos.DocsEnv
+	PSP                      cobranzas.PSP
+	MercadoPagoWebhookSecret string
 }
 
 type loginRequest struct {

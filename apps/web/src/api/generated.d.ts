@@ -542,6 +542,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/mercado-pago": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["mercadoPagoWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios/{id}/cobranzas/mercado-pago": {
         parameters: {
             query?: never;
@@ -1202,6 +1218,10 @@ export interface components {
             estado: "pendiente_revision" | "acreditado" | "rechazado" | "revertido";
             /** Format: int64 */
             saldo_a_favor_cents?: number;
+            psp_provider?: string | null;
+            psp_preference_id?: string | null;
+            /** Format: uri */
+            psp_checkout_url?: string | null;
         };
         MercadoPagoCobranza: {
             cobranza: components["schemas"]["Cobranza"];
@@ -1210,6 +1230,14 @@ export interface components {
             /** @enum {string} */
             provider: "mercadopago" | "mock";
             preference_id: string;
+        };
+        MercadoPagoWebhook: {
+            preference_id: string;
+            /** @enum {string} */
+            status: "approved" | "rejected" | "pending" | "cancelled" | "authorized";
+        };
+        MercadoPagoWebhookResult: {
+            processed: boolean;
         };
         Reclamo: {
             /** Format: uuid */
@@ -2328,6 +2356,33 @@ export interface operations {
             };
             /** @description Referencia duplicada; requiere resolución. */
             409: components["responses"]["Problem"];
+        };
+    };
+    mercadoPagoWebhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Mercado-Pago-Webhook-Secret"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MercadoPagoWebhook"];
+            };
+        };
+        responses: {
+            /** @description Webhook procesado o ignorado. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MercadoPagoWebhookResult"];
+                };
+            };
+            401: components["responses"]["Problem"];
         };
     };
     createMercadoPagoCobranza: {

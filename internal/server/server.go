@@ -17,7 +17,7 @@ import (
 )
 
 // New crea el router HTTP raíz con middleware, rutas y handlers.
-func New(log *slog.Logger, env string, identityManager *identity.AuthManager, auditRecorder *audit.Recorder, docsEnv documentos.DocsEnv, psp cobranzas.PSP) http.Handler {
+func New(log *slog.Logger, env string, identityManager *identity.AuthManager, auditRecorder *audit.Recorder, docsEnv documentos.DocsEnv, psp cobranzas.PSP, mercadoPagoWebhookSecret string) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -38,7 +38,7 @@ func New(log *slog.Logger, env string, identityManager *identity.AuthManager, au
 	api := chi.NewRouter()
 	api.Get("/health", handleHealth)
 
-	h := &httpx.AuthHandlers{Manager: identityManager, Audit: auditRecorder, Docs: docsEnv, PSP: psp}
+	h := &httpx.AuthHandlers{Manager: identityManager, Audit: auditRecorder, Docs: docsEnv, PSP: psp, MercadoPagoWebhookSecret: mercadoPagoWebhookSecret}
 	httpx.RegisterAuthRoutes(api, h)
 
 	r.Mount("/api/v1", api)
