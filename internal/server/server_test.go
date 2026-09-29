@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,5 +63,21 @@ func TestHealthAPIV1MandaRequestID(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, se esperaba 200", rec.Code)
+	}
+}
+
+func TestMetricsExponeTraficoHTTP(t *testing.T) {
+	h := newTestServer()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/health", nil))
+
+	recMetrics := httptest.NewRecorder()
+	h.ServeHTTP(recMetrics, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if recMetrics.Code != http.StatusOK {
+		t.Fatalf("metrics status = %d, se esperaba 200", recMetrics.Code)
+	}
+	body := recMetrics.Body.String()
+	if !strings.Contains(body, "http_requests_total") {
+		t.Fatalf("/metrics no expone http_requests_total:\n%s", body)
 	}
 }

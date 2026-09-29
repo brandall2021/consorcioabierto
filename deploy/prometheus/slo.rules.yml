@@ -1,0 +1,16 @@
+# SLO inicial §10.3 — consorcioabierto
+groups:
+  - name: slo.rules
+    interval: 60s
+    rules:
+      # Latencia p95 de requests API (objetivo < 500 ms).
+      - record: api:http_request_duration_seconds:p95_5m
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+
+      # Tasa de errores 5xx (objetivo < 1%).
+      - record: api:http_errors_5xx:ratio_5m
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+
+      # Tasa de errores por ruta.
+      - record: api:http_errors_5xx:ratio_5m:route
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (route) / sum(rate(http_requests_total[5m])) by (route)

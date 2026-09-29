@@ -32,6 +32,9 @@ type Config struct {
 	PSPDriver                string
 	MercadoPagoWebhookSecret string
 
+	OTELExporter         string
+	OTELExporterEndpoint string
+
 	S3Endpoint  string
 	S3Bucket    string
 	S3AccessKey string
@@ -65,6 +68,8 @@ func Load() (*Config, error) {
 		MailDriver:               getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:                getenv("PSP_DRIVER", "mock"),
 		MercadoPagoWebhookSecret: os.Getenv("MERCADO_PAGO_WEBHOOK_SECRET"),
+		OTELExporter:             getenv("OTEL_EXPORTER", "console"),
+		OTELExporterEndpoint:     os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 		S3Endpoint:               getenv("S3_ENDPOINT", "http://localhost:9000"),
 		S3Bucket:                 getenv("S3_BUCKET", "consorcio-docs"),
 		S3AccessKey:              getenv("S3_ACCESS_KEY", ""),
@@ -101,6 +106,12 @@ func (c *Config) Validate() error {
 		if c.PSPDriver == "mercadopago" && strings.TrimSpace(c.MercadoPagoWebhookSecret) == "" {
 			return fmt.Errorf("MERCADO_PAGO_WEBHOOK_SECRET es obligatoria cuando PSP_DRIVER=mercadopago")
 		}
+	}
+	if c.OTELExporter != "" && c.OTELExporter != "none" && c.OTELExporter != "console" && c.OTELExporter != "otlp" {
+		return fmt.Errorf("OTEL_EXPORTER debe ser console, otlp o none")
+	}
+	if c.OTELExporter == "otlp" && strings.TrimSpace(c.OTELExporterEndpoint) == "" {
+		return fmt.Errorf("OTEL_EXPORTER_OTLP_ENDPOINT es obligatorio cuando OTEL_EXPORTER=otlp")
 	}
 	return nil
 }

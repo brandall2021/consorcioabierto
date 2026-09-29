@@ -13,7 +13,6 @@ import (
 	"github.com/brandall2021/consorcioabierto/internal/observability"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // New crea el router HTTP raíz con middleware, rutas y handlers.
@@ -33,7 +32,7 @@ func New(log *slog.Logger, env string, identityManager *identity.AuthManager, au
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
-	r.Get("/metrics", observability.Handler())
+	r.Get("/metrics", observability.Handler().ServeHTTP)
 
 	api := chi.NewRouter()
 	api.Get("/health", handleHealth)
@@ -62,8 +61,6 @@ func requestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 				"route", observability.RoutePattern(r),
 				"status", status,
 				"duration_ms", time.Since(start).Milliseconds(),
-				"trace_id", trace.SpanContextFromContext(r.Context()).TraceID().String(),
-				"span_id", trace.SpanContextFromContext(r.Context()).SpanID().String(),
 			)
 		})
 	}

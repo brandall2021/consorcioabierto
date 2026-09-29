@@ -20,11 +20,28 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		authed.Use(RequireAuth(h.Manager))
 		authed.Get("/me", h.Me)
 		authed.Get("/memberships", h.Memberships)
+		authed.Get("/portal", h.GetPortalHome)
 	})
 
 	r.Route("/audit-events", func(ar chi.Router) {
 		ar.Use(RequirePermission(h.Manager, "auditoria.read"))
 		ar.Get("/", h.listAuditEventsHandler())
+	})
+
+	r.Group(func(cr chi.Router) {
+		cr.Use(RequirePermission(h.Manager, "cobranzas.read"))
+		cr.Get("/consorcios/{id}/cobranzas", h.ListCobranzas)
+		cr.Get("/cobranzas/{id}", h.GetCobranza)
+		cr.Get("/cobranzas/{id}/recibo.pdf", h.GetCobranzaRecibo)
+		cr.Get("/consorcios/{id}/unidades/{unidadId}/cuenta-corriente", h.GetCuentaCorriente)
+		cr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "cobranzas.manage"))
+			mgmt.Post("/consorcios/{id}/cobranzas", h.CreateCobranza)
+			mgmt.Post("/consorcios/{id}/cobranzas/mercado-pago", h.CreateMercadoPagoCobranza)
+			mgmt.Post("/cobranzas/{id}/acreditar", h.AcreditarCobranza)
+			mgmt.Post("/cobranzas/{id}/asignaciones", h.AjustarAsignaciones)
+			mgmt.Post("/cobranzas/{id}/revertir", h.RevertirCobranza)
+		})
 	})
 
 	// Consorcios: lectura con consorcios.read, escritura con consorcios.manage.
@@ -72,6 +89,30 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		dr.Group(func(mgmt chi.Router) {
 			mgmt.Use(RequirePermission(h.Manager, "documentos.manage"))
 			mgmt.Post("/document-upload-intents", h.CreateDocumentUploadIntent)
+		})
+	})
+
+	// Comunicaciones: lectura y publicación de comunicados con outbox.
+	r.Group(func(cm chi.Router) {
+		cm.Use(RequirePermission(h.Manager, "comunicaciones.read"))
+		cm.Get("/consorcios/{id}/comunicados", h.ListComunicados)
+		cm.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "comunicaciones.send"))
+			mgmt.Post("/consorcios/{id}/comunicados", h.CreateComunicado)
+			mgmt.Post("/comunicados/{id}/publicar", h.PublishComunicado)
+		})
+	})
+
+	// Reclamos: lectura con reclamos.read, gestión con reclamos.manage.
+	r.Group(func(rr chi.Router) {
+		rr.Use(RequirePermission(h.Manager, "reclamos.read"))
+		rr.Get("/consorcios/{id}/reclamos", h.ListReclamos)
+		rr.Get("/reclamos/{id}", h.GetReclamo)
+		rr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "reclamos.manage"))
+			mgmt.Post("/consorcios/{id}/reclamos", h.CreateReclamo)
+			mgmt.Post("/reclamos/{id}/mensajes", h.AddReclamoMensaje)
+			mgmt.Post("/reclamos/{id}/transiciones", h.TransicionReclamo)
 		})
 	})
 

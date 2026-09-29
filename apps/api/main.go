@@ -15,6 +15,7 @@ import (
 	"github.com/brandall2021/consorcioabierto/internal/cobranzas"
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
+	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
 	"github.com/brandall2021/consorcioabierto/internal/documentos"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
@@ -25,6 +26,7 @@ import (
 
 func main() {
 	log := logger.New(os.Getenv("LOG_FORMAT"))
+	slog.SetDefault(log)
 
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		runMigrate(log, os.Args[2:])
@@ -40,7 +42,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	shutdownTracing, err := observability.InitTracing("consorcioabierto-api", cfg.Env)
+	shutdownTracing, err := observability.InitTracing("consorcioabierto-api", cfg.Env, cfg.OTELExporter, cfg.OTELExporterEndpoint)
 	if err != nil {
 		log.Error("tracing", "error", err)
 		os.Exit(1)
@@ -53,6 +55,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+	observability.RegisterDBPool(ctx, pool)
+	observability.RegisterOutbox(ctx, pool)
 
 	identityManager := identity.NewAuthManager(cfg, nil, pool)
 	if keyPem := []byte(cfg.JWTPrivateKey); len(keyPem) > 0 {
@@ -84,10 +88,11 @@ func main() {
 			mailDriver = &outbox.MailpitDriver{BaseURL: "http://localhost:8025"}
 		}
 		w := &outbox.Worker{
-			Log:    log,
-			Pool:   pool,
-			Mail:   mailDriver,
-			PDFGen: &outbox.SimplePDFGenerator{},
+			Log:     log,
+			Pool:    pool,
+			Queries: db.New(pool),
+			Mail:    mailDriver,
+			PDFGen:  &outbox.SimplePDFGenerator{},
 		}
 		go w.Run(ctx)
 	}

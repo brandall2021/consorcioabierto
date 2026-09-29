@@ -23,6 +23,9 @@ export function AppLayout() {
           <NavLink to="/app" end className={navLinkClass}>
             Inicio
           </NavLink>
+          <NavLink to="/portal" className={navLinkClass}>
+            Portal
+          </NavLink>
 
           {isEnabled('consorcios') && canReadConsorcios && (
             <>

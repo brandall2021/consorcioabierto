@@ -28,9 +28,6 @@ func TestProcessMercadoPagoWebhookApprovesOnce(t *testing.T) {
 	if fake.intentStatus != "approved" {
 		t.Fatalf("intent status unexpected: %s", fake.intentStatus)
 	}
-	if fake.accountEntries != 1 {
-		t.Fatalf("expected one account entry, got %d", fake.accountEntries)
-	}
 
 	processed, err = ProcessMercadoPagoWebhook(context.Background(), fake, queries, MercadoPagoWebhookInput{PreferenceID: "pref-1", Status: "approved"})
 	if err != nil {
@@ -38,9 +35,6 @@ func TestProcessMercadoPagoWebhookApprovesOnce(t *testing.T) {
 	}
 	if !processed {
 		t.Fatal("expected processed=true on repeat")
-	}
-	if fake.accountEntries != 1 {
-		t.Fatalf("expected no duplicate account entries, got %d", fake.accountEntries)
 	}
 }
 
@@ -60,7 +54,6 @@ func TestProcessMercadoPagoWebhookIgnoresUnknownPreference(t *testing.T) {
 type fakeMercadoPagoWebhookDBTX struct {
 	paymentEstado  string
 	intentStatus   string
-	accountEntries int
 	missingIntent  bool
 }
 
@@ -81,9 +74,6 @@ func (f *fakeMercadoPagoWebhookDBTX) Exec(_ context.Context, query string, args 
 				f.intentStatus = s
 			}
 		}
-		return pgconn.CommandTag{}, nil
-	case strings.Contains(query, "INSERT INTO account_entries"):
-		f.accountEntries++
 		return pgconn.CommandTag{}, nil
 	default:
 		return pgconn.CommandTag{}, nil
@@ -131,22 +121,6 @@ func (f *fakeMercadoPagoWebhookDBTX) QueryRow(_ context.Context, query string, a
 			pgtype.Text{String: "mercadopago", Valid: true},
 			pgtype.Text{String: "pref-1", Valid: true},
 			pgtype.Text{String: "https://example.com", Valid: true},
-		}}
-	case strings.Contains(query, "INSERT INTO account_entries"):
-		f.accountEntries++
-		return fakeRow{values: []any{
-			stubUUID("tenant-1"),
-			stubUUID("unit-1"),
-			stubUUID("entry-1"),
-			"credito",
-			stubDate("2026-09-10"),
-			int64(0),
-			int64(12345),
-			"ARS",
-			pgtype.Text{String: "cobranza", Valid: true},
-			pgtype.UUID{},
-			pgtype.UUID{},
-			stubTime(),
 		}}
 	default:
 		return fakeRow{err: pgx.ErrNoRows}

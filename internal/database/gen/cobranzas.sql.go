@@ -295,6 +295,44 @@ func (q *Queries) ListOpenChargesByUnidad(ctx context.Context, arg ListOpenCharg
 	return items, nil
 }
 
+const listChargesByUnidad = `-- name: ListChargesByUnidad :many
+SELECT tenant_id, unidad_id, id, liquidacion_id, concepto, due_date, total_cents, saldo_cents, created_at
+FROM charges
+WHERE tenant_id = app.current_tenant_id()
+  AND unidad_id = $1::UUID
+ORDER BY due_date ASC, created_at ASC, id ASC
+`
+
+func (q *Queries) ListChargesByUnidad(ctx context.Context, unidadID pgtype.UUID) ([]Charge, error) {
+	rows, err := q.db.Query(ctx, listChargesByUnidad, unidadID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Charge{}
+	for rows.Next() {
+		var i Charge
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.UnidadID,
+			&i.ID,
+			&i.LiquidacionID,
+			&i.Concepto,
+			&i.DueDate,
+			&i.TotalCents,
+			&i.SaldoCents,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPaymentAllocationsByPayment = `-- name: ListPaymentAllocationsByPayment :many
 SELECT tenant_id, payment_id, charge_id, amount_cents, created_by, created_at
 FROM payment_allocations

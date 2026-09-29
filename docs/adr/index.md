@@ -16,6 +16,7 @@ Registro de decisiones de arquitectura. Formato ADR (Michael Nygard): **Estado**
 | [ADR-0008](./0008-ports-and-adapters.md) | Integraciones desacopladas por puertos y adaptadores |
 | [ADR-0009](./0009-token-session.md) | Access token JWT corto + refresh opaco rotativo |
 | [ADR-0010](./0010-infra-dokploy.md) | Infraestructura: Dokploy + Postgres + MinIO; sin Redis en el MVP |
+| [ADR-0011](./0011-observability.md) | Observabilidad: OTel (trazas) + Prometheus (métricas) + slog JSON; outbox contado con SECURITY DEFINER |
 
 ## Reglas
 

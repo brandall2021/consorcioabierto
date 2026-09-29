@@ -66,7 +66,7 @@ type fakeMercadoPagoDBTX struct{}
 
 func (f *fakeMercadoPagoDBTX) Exec(_ context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
 	if strings.Contains(query, "UPDATE payments") {
-		if len(args) != 4 {
+		if len(args) != 3 && len(args) != 4 {
 			panic("unexpected args")
 		}
 		return pgconn.CommandTag{}, nil

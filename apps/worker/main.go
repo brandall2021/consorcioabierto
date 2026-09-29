@@ -4,17 +4,21 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/brandall2021/consorcioabierto/internal/config"
 	"github.com/brandall2021/consorcioabierto/internal/database"
+	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
 	"github.com/brandall2021/consorcioabierto/internal/logger"
+	"github.com/brandall2021/consorcioabierto/internal/outbox"
 )
 
 func main() {
 	log := logger.New(os.Getenv("LOG_FORMAT"))
+	slog.SetDefault(log)
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -32,7 +36,8 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Fase posterior: consumo del outbox (documentos, notificaciones, envíos).
+	w := &outbox.Worker{Log: log, Pool: pool, Queries: db.New(pool), Mail: &outbox.MockDriver{Log: log}, PDFGen: &outbox.SimplePDFGenerator{}}
+	go w.Run(ctx)
 	log.Info("worker iniciado", "env", cfg.Env)
 	<-ctx.Done()
 	log.Info("worker detenido")

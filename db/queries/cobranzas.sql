@@ -70,6 +70,13 @@ WHERE tenant_id = app.current_tenant_id()
   AND due_date <= sqlc.arg(fecha_corte)::DATE
 ORDER BY due_date ASC, created_at ASC, id ASC;
 
+-- name: ListChargesByUnidad :many
+SELECT tenant_id, unidad_id, id, liquidacion_id, concepto, due_date, total_cents, saldo_cents, created_at
+FROM charges
+WHERE tenant_id = app.current_tenant_id()
+  AND unidad_id = sqlc.arg(unidad_id)::UUID
+ORDER BY due_date ASC, created_at ASC, id ASC;
+
 -- name: InsertPaymentAllocation :one
 INSERT INTO payment_allocations (tenant_id, payment_id, charge_id, amount_cents, created_by)
 VALUES (app.current_tenant_id(), sqlc.arg(payment_id)::UUID, sqlc.arg(charge_id)::UUID,

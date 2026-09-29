@@ -53,6 +53,7 @@ MAIL_FROM=
 PSP_DRIVER=mock
 
 # Auditoría / observabilidad
-OTEL_EXPORTER=console
-OTEL_METRICS_PORT=9090
-LOG_FORMAT=json
+OTEL_EXPORTER=console            # console | otlp | none (ver docs/observability.md)
+OTEL_EXPORTER_OTLP_ENDPOINT=     # obligatorio si OTEL_EXPORTER=otlp
+LOG_FORMAT=json                  # json | text
+LOG_LEVEL=info                   # debug | info | warn | error

@@ -67,17 +67,17 @@ type Charge struct {
 }
 
 type Comunicado struct {
-	TenantID      pgtype.UUID        `json:"tenant_id"`
-	ConsorcioID   pgtype.UUID        `json:"consorcio_id"`
-	ID            pgtype.UUID        `json:"id"`
-	Titulo        string             `json:"titulo"`
-	Cuerpo        string             `json:"cuerpo"`
-	Destinatarios string             `json:"destinatarios"`
-	Estado        string             `json:"estado"`
-	PublicadoAt   pgtype.Timestamptz `json:"publicado_at"`
-	CreatedBy     pgtype.UUID        `json:"created_by"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	TenantID           pgtype.UUID        `json:"tenant_id"`
+	ConsorcioID        pgtype.UUID        `json:"consorcio_id"`
+	ID                 pgtype.UUID        `json:"id"`
+	Titulo             string             `json:"titulo"`
+	Cuerpo             string             `json:"cuerpo"`
+	DestinatariosScope string             `json:"destinatarios_scope"`
+	Destinatarios      int64              `json:"destinatarios"`
+	Estado             string             `json:"estado"`
+	PublicadoAt        pgtype.Timestamptz `json:"publicado_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ConceptosExpensa struct {
@@ -243,13 +243,15 @@ type MembershipRole struct {
 type OutboxEvent struct {
 	TenantID      pgtype.UUID        `json:"tenant_id"`
 	ID            pgtype.UUID        `json:"id"`
-	CorrelationID pgtype.UUID        `json:"correlation_id"`
+	CorrelationID string             `json:"correlation_id"`
 	EventType     string             `json:"event_type"`
 	Payload       []byte             `json:"payload"`
 	Estado        string             `json:"estado"`
 	Intentos      int32              `json:"intentos"`
+	LastError     string             `json:"last_error"`
 	NextAttemptAt pgtype.Timestamptz `json:"next_attempt_at"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Payment struct {
@@ -324,6 +326,7 @@ type Reclamo struct {
 	Texto         string             `json:"texto"`
 	Estado        string             `json:"estado"`
 	ResponsableID pgtype.UUID        `json:"responsable_id"`
+	SlaDueAt      pgtype.Timestamptz `json:"sla_due_at"`
 	CreatedBy     pgtype.UUID        `json:"created_by"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
@@ -345,6 +348,8 @@ type ReclamoTransicione struct {
 	ID            pgtype.UUID        `json:"id"`
 	Accion        string             `json:"accion"`
 	Motivo        pgtype.Text        `json:"motivo"`
+	FromEstado    string             `json:"from_estado"`
+	ToEstado      string             `json:"to_estado"`
 	ResponsableID pgtype.UUID        `json:"responsable_id"`
 	CreatedBy     pgtype.UUID        `json:"created_by"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`

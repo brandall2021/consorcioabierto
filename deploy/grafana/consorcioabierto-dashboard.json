@@ -1,0 +1,69 @@
+{
+  "title": "ConsorcioAbierto — SLO (§10.3)",
+  "uid": "consorcioabierto-slo",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["consorcioabierto", "slo"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Latencia p95 (objetivo < 500 ms)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "api:http_request_duration_seconds:p95_5m * 1000", "legendFormat": "p95 ms" },
+        { "expr": "500", "legendFormat": "objetivo SLO" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Errores 5xx (objetivo < 1%)",
+      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 0 },
+      "targets": [{ "expr": "api:http_errors_5xx:ratio_5m * 100", "legendFormat": "%" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Requests por ruta",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(rate(http_requests_total[5m])) by (route)", "legendFormat": "{{route}}" }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Conexiones BD (pool pgx)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "database_pool_connections", "legendFormat": "{{state}}" },
+        { "expr": "database_pool_max_connections", "legendFormat": "max" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "bargauge",
+      "title": "Outbox por estado",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "targets": [{ "expr": "outbox_events_by_state", "legendFormat": "{{estado}}" }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Login fallidos y trabajos fallidos",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "targets": [
+        { "expr": "increase(auth_login_failures_total[5m])", "legendFormat": "login fallidos" },
+        { "expr": "outbox_events_by_state{estado=\"fallido\"}", "legendFormat": "outbox fallidos" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Envíos procesados",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [{ "expr": "rate(outbox_events_by_state{estado=\"procesado\"}[5m])", "legendFormat": "envíos/s" }]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s"
+}

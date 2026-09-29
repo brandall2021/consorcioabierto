@@ -13,7 +13,7 @@ function errorMessage(err: unknown): string {
 }
 
 export function Login() {
-  const { status, memberships, login, verifyMfa, selectTenant } = useAuth()
+  const { status, memberships, me, login, verifyMfa, selectTenant } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -24,9 +24,10 @@ export function Login() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      navigate('/app', { replace: true })
+      const roles = me?.membership.roles ?? []
+      navigate(roles.length === 1 && roles[0] === 'consorcista' ? '/portal' : '/app', { replace: true })
     }
-  }, [status, navigate])
+  }, [me, status, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

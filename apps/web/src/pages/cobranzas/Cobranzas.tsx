@@ -17,6 +17,20 @@ type CobranzaDetalle = {
 	asignaciones: { charge_id: string; amount_cents: number }[]
 	saldo_a_favor_cents: number
 }
+type CuentaCorrienteMovimiento = {
+	id: string
+	unidad_id: string
+	tipo: string
+	fecha_efectiva: string
+	debit_cents: number
+	credit_cents: number
+	currency: string
+	referencia?: string | null
+}
+type CuentaCorriente = {
+	data: CuentaCorrienteMovimiento[]
+	meta: { request_id: string; saldo_cents: number }
+}
 type MercadoPagoCobranza = {
 	cobranza: Cobranza
 	checkout_url: string
@@ -215,6 +229,7 @@ export function Cobranzas() {
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: ['cobranzas', consorcioId] })
 			await queryClient.invalidateQueries({ queryKey: ['cobranza', consorcioId] })
+			await queryClient.invalidateQueries({ queryKey: ['cuenta-corriente', consorcioId] })
 		},
 	})
 
@@ -235,6 +250,18 @@ export function Cobranzas() {
 	const unitById = new Map(unidades.map((u) => [u.id, u]))
 	const loadError = unidadesQuery.error ?? cobranzasQuery.error
 	const detalleCobranza = detalleCobranzaQuery.data?.cobranza
+	const cuentaCorrienteQuery = useQuery({
+		queryKey: ['cuenta-corriente', consorcioId, detalleCobranza?.unidad_id],
+		queryFn: async () => {
+			if (!detalleCobranza?.unidad_id) throw new Error('No se seleccionó una UF')
+			const res = await client.GET('/consorcios/{id}/unidades/{unidadId}/cuenta-corriente', {
+				params: { path: { id: consorcioId, unidadId: detalleCobranza.unidad_id } },
+			})
+			if (!res.data) throw new Error('No se pudo cargar la cuenta corriente')
+			return res.data as CuentaCorriente
+		},
+		enabled: Boolean(detalleCobranza?.unidad_id),
+	})
 
 	return (
 		<section>
@@ -491,9 +518,52 @@ export function Cobranzas() {
 								</button>
 							</div>
 						)}
+
+						<div>
+							<p className="text-xs uppercase tracking-wide text-gray-500">Cuenta corriente</p>
+							{cuentaCorrienteQuery.isLoading && <p className="mt-2 text-gray-600">Cargando movimientos…</p>}
+							{cuentaCorrienteQuery.error && (
+								<p className="mt-2 text-sm text-red-600" role="alert">
+									{cuentaCorrienteQuery.error instanceof Error ? cuentaCorrienteQuery.error.message : 'No se pudo cargar la cuenta corriente'}
+								</p>
+							)}
+							{cuentaCorrienteQuery.data && (
+								<div className="mt-2 space-y-2">
+									<p className="text-sm text-gray-600">Saldo actual: {formatMoney(cuentaCorrienteQuery.data.meta.saldo_cents)}</p>
+									{cuentaCorrienteQuery.data.data.length ? (
+										<div className="overflow-hidden rounded-md border">
+											<table className="w-full text-left text-xs">
+												<thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
+													<tr>
+														<th className="px-2 py-1">Fecha</th>
+														<th className="px-2 py-1">Tipo</th>
+														<th className="px-2 py-1">Referencia</th>
+														<th className="px-2 py-1 text-right">Débito</th>
+														<th className="px-2 py-1 text-right">Crédito</th>
+													</tr>
+												</thead>
+												<tbody className="divide-y">
+													{cuentaCorrienteQuery.data.data.map((m) => (
+														<tr key={m.id}>
+															<td className="px-2 py-1 text-gray-600">{m.fecha_efectiva}</td>
+															<td className="px-2 py-1 text-gray-600">{m.tipo}</td>
+															<td className="px-2 py-1 text-gray-600">{m.referencia ?? '—'}</td>
+															<td className="px-2 py-1 text-right">{formatMoney(m.debit_cents)}</td>
+															<td className="px-2 py-1 text-right">{formatMoney(m.credit_cents)}</td>
+														</tr>
+													))}
+												</tbody>
+											</table>
+										</div>
+									) : (
+										<p className="text-gray-600">Sin movimientos.</p>
+									)}
+								</div>
+							)}
+						</div>
 					</div>
-				)}
-			</Modal>
+					)}
+				</Modal>
 		</section>
 	)
 }

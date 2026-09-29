@@ -9,6 +9,7 @@ import { Unidades } from '@/pages/unidades/Unidades'
 import { Dashboard } from '@/pages/dashboard/Dashboard'
 import { Login } from '@/pages/login/Login'
 import { Perfil } from '@/pages/perfil/Perfil'
+import { Portal } from '@/pages/portal/Portal'
 
 function RequireAuth() {
   const { status } = useAuth()
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       {
         element: <RequireAuth />,
         children: [
+          { path: '/portal', element: <Portal /> },
           {
             path: '/app',
             element: <AppLayout />,

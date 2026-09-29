@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 60s
+
+scrape_configs:
+  - job_name: consorcioabierto-api
+    static_configs:
+      - targets: ["api:8080"]
+    metrics_path: /metrics
+
+rule_files:
+  - /etc/prometheus/slo.rules.yml
