@@ -49,6 +49,7 @@ CREATE POLICY outbox_events_update ON outbox_events FOR UPDATE USING (tenant_id 
 
 GRANT SELECT, INSERT, UPDATE ON outbox_events TO consorcio_app;
 
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION app.claim_pending_outbox_events(p_limit INTEGER)
 RETURNS TABLE (
     tenant_id UUID,
@@ -86,6 +87,7 @@ AS $$
     RETURNING o.tenant_id, o.id, o.correlation_id, o.event_type, o.payload, o.estado,
               o.intentos, o.last_error, o.next_attempt_at, o.created_at, o.updated_at;
 $$;
+-- +goose StatementEnd
 
 GRANT EXECUTE ON FUNCTION app.claim_pending_outbox_events(INTEGER) TO consorcio_app;
 

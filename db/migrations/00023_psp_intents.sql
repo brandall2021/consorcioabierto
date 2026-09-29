@@ -23,6 +23,7 @@ CREATE POLICY psp_intents_update ON psp_intents FOR UPDATE USING (tenant_id = ap
 
 GRANT SELECT, INSERT, UPDATE ON psp_intents TO consorcio_app;
 
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION app.find_psp_intent_by_preference_id(pref TEXT)
 RETURNS TABLE (
     tenant_id UUID,
@@ -43,6 +44,7 @@ AS $$
     WHERE i.preference_id = pref
     LIMIT 1;
 $$;
+-- +goose StatementEnd
 
 -- +goose Down
 DROP FUNCTION IF EXISTS app.find_psp_intent_by_preference_id(TEXT);

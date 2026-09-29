@@ -28,7 +28,9 @@ ALTER TABLE idempotency_keys ENABLE ROW LEVEL SECURITY;
 CREATE POLICY idempotency_visible ON idempotency_keys FOR SELECT USING (tenant_id = app.current_tenant_id());
 CREATE POLICY idempotency_insert ON idempotency_keys FOR INSERT WITH CHECK (tenant_id = app.current_tenant_id());
 
+-- +goose StatementBegin
 DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='consorcio_app') THEN CREATE ROLE consorcio_app LOGIN PASSWORD 'consorcio_app_secret'; END IF; END $$;
+-- +goose StatementEnd
 
 GRANT USAGE ON SCHEMA public, app TO consorcio_app;
 GRANT SELECT ON users, tenants, memberships, roles, membership_roles, role_scopes, sessions, refresh_tokens, idempotency_keys TO consorcio_app;
@@ -58,5 +60,7 @@ DROP POLICY IF EXISTS memberships_visible ON memberships;
 ALTER TABLE tenants DISABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenants_visible ON tenants;
 
+-- +goose StatementBegin
 DO $$ BEGIN IF EXISTS (SELECT FROM pg_roles WHERE rolname='consorcio_app') THEN REVOKE ALL PRIVILEGES ON SCHEMA public, app FROM consorcio_app;
 DROP ROLE consorcio_app; END IF; END $$;
+-- +goose StatementEnd
