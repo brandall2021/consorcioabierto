@@ -11,13 +11,15 @@ import (
 )
 
 type stubAuthorizer struct {
-	claims  *identity.Claims
-	perms   []string
-	err     error
-	permErr error
+	claims   *identity.Claims
+	perms    []string
+	err      error
+	permErr  error
+	received string
 }
 
 func (s *stubAuthorizer) VerifyAccessToken(token string) (*identity.Claims, error) {
+	s.received = token
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -58,6 +60,42 @@ func TestRequireAuthSinToken(t *testing.T) {
 	rec := callMiddleware(next, nil, nil)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, se esperaba 401", rec.Code)
+	}
+}
+
+func TestBearerTokenQuitaElPrefijoBearer(t *testing.T) {
+	casos := []struct {
+		header string
+		want   string
+		nombre string
+	}{
+		{"Bearer abc.def.ghi", "abc.def.ghi", "con prefijo Bearer"},
+		{"bearer abc.def.ghi", "abc.def.ghi", "prefijo en minúsculas"},
+		{"BEARER abc.def.ghi", "abc.def.ghi", "prefijo en mayúsculas"},
+		{"  Bearer   abc.def.ghi", "abc.def.ghi", "espacios alrededor"},
+		{"abc.def.ghi", "abc.def.ghi", "token crudo sin prefijo"},
+		{"Bearer   ", "", "solo prefijo sin token"},
+	}
+	for _, c := range casos {
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("Authorization", c.header)
+		if got := bearerToken(req); got != c.want {
+			t.Errorf("%s: bearerToken(%q) = %q, se esperaba %q", c.nombre, c.header, got, c.want)
+		}
+	}
+}
+
+// El token del header Authorization debe llegar al Authorizer sin el prefijo
+// "Bearer ": si no, la verificación de firma falla con "firma inválida".
+func TestRequireAuthPasaElTokenSinPrefijoAlAuthorizer(t *testing.T) {
+	auth := &stubAuthorizer{claims: &identity.Claims{Subject: "u1"}}
+	next := RequireAuth(auth)(okHandler(t))
+	rec := callMiddleware(next, auth, map[string]string{"Authorization": "Bearer abc.def.ghi"})
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, se esperaba 204", rec.Code)
+	}
+	if auth.received != "abc.def.ghi" {
+		t.Fatalf("el Authorizer recibió %q, se esperaba %q", auth.received, "abc.def.ghi")
 	}
 }
 

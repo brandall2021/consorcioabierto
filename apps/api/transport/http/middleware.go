@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/brandall2021/consorcioabierto/internal/httpapi"
 	"github.com/brandall2021/consorcioabierto/internal/identity"
@@ -31,8 +32,13 @@ type Authorizer interface {
 }
 
 // bearerToken extrae el access token del header Authorization o de la cookie.
+// Si el header usa el esquema "Bearer" (case-insensitive, RFC 6750) se quita
+// el prefijo: el Authorizer espera el JWT crudo para verificar la firma.
 func bearerToken(r *http.Request) string {
-	if tok := r.Header.Get("Authorization"); tok != "" {
+	if tok := strings.TrimSpace(r.Header.Get("Authorization")); tok != "" {
+		if len(tok) >= 6 && strings.EqualFold(tok[:6], "bearer") {
+			tok = strings.TrimSpace(tok[6:])
+		}
 		return tok
 	}
 	if c, err := r.Cookie(accessCookieName); err == nil {
