@@ -2935,8 +2935,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ReclamoMensaje"];
+                };
             };
+            400: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
         };
     };
     transicionReclamo: {

@@ -68,6 +68,14 @@ export function ConsorcioLayout() {
             >
               Proveedores
             </NavLink>
+            {me?.permissions.includes('reclamos.read') && (
+              <NavLink
+                to={`/app/consorcios/${consorcioId}/reclamos`}
+                className={tabClass}
+              >
+                Reclamos
+              </NavLink>
+            )}
           </nav>
 
           <div className="mt-4">

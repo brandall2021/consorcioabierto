@@ -1770,7 +1770,14 @@ paths:
                 texto: { type: string, minLength: 1 }
                 adjunto_id: { type: [string, "null"], format: uuid }
       responses:
-        "201": { description: Mensaje agregado. }
+        "201":
+          description: Mensaje agregado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReclamoMensaje"
+        "400": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
   /reclamos/{id}/transiciones:
     parameters:
       - { $ref: "#/components/parameters/ReclamoId" }

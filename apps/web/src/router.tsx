@@ -10,6 +10,7 @@ import { Dashboard } from '@/pages/dashboard/Dashboard'
 import { Login } from '@/pages/login/Login'
 import { Perfil } from '@/pages/perfil/Perfil'
 import { Portal } from '@/pages/portal/Portal'
+import { Reclamos } from '@/pages/reclamos/Reclamos'
 
 function RequireAuth() {
   const { status } = useAuth()
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
                   { index: true, element: <Unidades /> },
                   { path: 'unidades', element: <Unidades /> },
                   { path: 'proveedores', element: <Proveedores /> },
+                  { path: 'reclamos', element: <Reclamos /> },
                 ],
               },
               { path: 'auditoria', element: <Auditoria /> },
