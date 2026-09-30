@@ -443,14 +443,9 @@ func (h *AuthHandlers) listAuditEventsHandler() http.HandlerFunc {
 }
 
 // bearerOrCookie extrae el access token del header Authorization o de la cookie.
+// Delega en bearerToken para aplicar el mismo criterio de esquema "Bearer".
 func (h *AuthHandlers) bearerOrCookie(r *http.Request) string {
-	if tok := r.Header.Get("Authorization"); tok != "" {
-		return tok
-	}
-	if c, err := r.Cookie(accessCookieName); err == nil {
-		return c.Value
-	}
-	return ""
+	return bearerToken(r)
 }
 
 func mapAuthError(err error) int {
