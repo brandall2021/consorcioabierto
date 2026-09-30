@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -63,7 +64,7 @@ func Load() (*Config, error) {
 		LoginMaxAttempts:         getInt("LOGIN_MAX_ATTEMPTS", 5),
 		LoginAttemptWindow:       getDuration("LOGIN_ATTEMPT_WINDOW", 15*time.Minute),
 		MembershipCacheTTL:       getDuration("MEMBERSHIP_CACHE_TTL", time.Minute),
-		JWTPrivateKey:            os.Getenv("JWT_PRIVATE_KEY"),
+		JWTPrivateKey:            jwtPrivateKey(),
 		StorageDriver:            getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:               getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:                getenv("PSP_DRIVER", "mock"),
@@ -148,4 +149,21 @@ func getInt64(key string, def int64) int64 {
 		}
 	}
 	return def
+}
+
+// jwtPrivateKey devuelve la clave privada JWT. Prioriza JWT_PRIVATE_KEY (PEM
+// multilínea); si viene vacía acepta JWT_PRIVATE_KEY_B64 con la misma clave en
+// base64 standard y una sola línea, para entornos de despliegue que no soportan
+// valores con saltos de línea (p. ej. la UI de env de Dokploy).
+func jwtPrivateKey() string {
+	if k := os.Getenv("JWT_PRIVATE_KEY"); k != "" {
+		return k
+	}
+	if b := os.Getenv("JWT_PRIVATE_KEY_B64"); b != "" {
+		enc := strings.Join(strings.Fields(strings.TrimSpace(b)), "")
+		if d, err := base64.StdEncoding.DecodeString(enc); err == nil {
+			return string(d)
+		}
+	}
+	return ""
 }

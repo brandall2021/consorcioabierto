@@ -26,6 +26,7 @@ DATABASE_URL=postgres://consorcio:consorcio@localhost:5432/consorcioabierto?sslm
 
 # Identidad / sesión
 JWT_PRIVATE_KEY=            # EdDSA/RS256 PEM (solo env o secret manager)
+JWT_PRIVATE_KEY_B64=        # mismo PEM en base64 (una línea), si el deploy no soporta multilínea; tiene prioridad JWT_PRIVATE_KEY
 REFRESH_TOKEN_TTL=720h      # 30 días
 ACCESS_TOKEN_TTL=10m
 LOGIN_MAX_ATTEMPTS=5

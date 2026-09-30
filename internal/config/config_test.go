@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"encoding/base64"
+	"testing"
+)
 
 func baseConfig() *Config {
 	return &Config{
@@ -60,5 +63,28 @@ func TestValidateProductionAceptaDriversReales(t *testing.T) {
 				t.Fatalf("no se esperaba error: %v", err)
 			}
 		})
+	}
+}
+
+func TestJWTPrivateKeyPrecedenciaYBase64(t *testing.T) {
+	pem := "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n"
+	b64 := base64.StdEncoding.EncodeToString([]byte(pem))
+
+	t.Setenv("JWT_PRIVATE_KEY", "")
+	t.Setenv("JWT_PRIVATE_KEY_B64", b64)
+	if got := jwtPrivateKey(); got != pem {
+		t.Fatalf("JWT_PRIVATE_KEY_B64: se esperaba el PEM decodificado, got %q", got)
+	}
+
+	t.Setenv("JWT_PRIVATE_KEY", "")
+	t.Setenv("JWT_PRIVATE_KEY_B64", "no-es-base64-!")
+	if got := jwtPrivateKey(); got != "" {
+		t.Fatalf("B64 inválido: se esperaba vacío, got %q", got)
+	}
+
+	t.Setenv("JWT_PRIVATE_KEY_B64", b64)
+	t.Setenv("JWT_PRIVATE_KEY", "lineal")
+	if got := jwtPrivateKey(); got != "lineal" {
+		t.Fatalf("JWT_PRIVATE_KEY debe tener prioridad, got %q", got)
 	}
 }
