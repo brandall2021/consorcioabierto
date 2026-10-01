@@ -3,6 +3,7 @@ import { client } from '@/api/client'
 import type { components } from '@/api/generated.d'
 import { useAuth } from '@/auth/AuthProvider'
 import { Badge, EmptyState, ErrorState, PageHeader, SkeletonRows } from '@/components/ui/primitives'
+import { etiquetaEstado, toneEstado, type EstadoReclamo } from '@/pages/reclamos/estados'
 
 type PortalHome = components['schemas']['PortalHome']
 type PortalResponse = { data: PortalHome }
@@ -132,7 +133,32 @@ export function Portal() {
 
 					<section className="rounded-lg border bg-white p-4">
 						<h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Reclamos</h2>
-						<EmptyState title="Sin reclamos" description="Los reclamos del portal se habilitan en la siguiente etapa." />
+						{home.reclamos_recientes.length ? (
+							<ul className="mt-3 space-y-2">
+								{home.reclamos_recientes.map((reclamo) => (
+									<li key={reclamo.id} className="rounded-md border px-3 py-2 text-sm">
+										<div className="flex items-center justify-between gap-2">
+											<span className="font-medium">{reclamo.categoria}</span>
+											<Badge tone={toneEstado(reclamo.estado as EstadoReclamo)}>
+												{etiquetaEstado(reclamo.estado as EstadoReclamo)}
+											</Badge>
+										</div>
+										<p className="mt-1 text-gray-600">{reclamo.texto}</p>
+										<p className="text-xs text-gray-500">
+											Abierto{' '}
+											{new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(
+												new Date(reclamo.created_at),
+											)}
+										</p>
+									</li>
+								))}
+							</ul>
+						) : (
+							<EmptyState
+								title="Todavía no abriste ningún reclamo"
+								description="Si tenés un problema en tu unidad, avisale al administración del consorcio."
+							/>
+						)}
 					</section>
 				</div>
 			)}

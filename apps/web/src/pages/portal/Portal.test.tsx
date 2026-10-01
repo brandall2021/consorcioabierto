@@ -62,4 +62,66 @@ describe('Portal', () => {
 		expect(screen.getAllByText('Consorcio Norte').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('Recibos recientes').length).toBeGreaterThan(0)
 	})
+
+	function portalHome(reclamos: unknown[]) {
+		portalGet.mockResolvedValue({
+			data: {
+				data: {
+					consorcios: [],
+					recibos_recientes: [],
+					comunicados_recientes: [],
+					reclamos_recientes: reclamos,
+					total_saldo_vencido_cents: 0,
+				},
+			},
+			error: undefined,
+		})
+	}
+
+	it('lista los reclamos del consorcista con texto y estado', async () => {
+		portalHome([
+			{
+				id: 'r1',
+				consorcio_id: 'c1',
+				unidad_id: 'u1',
+				categoria: 'humedad',
+				estado: 'en_progreso',
+				texto: 'Se moja la pared del pasillo',
+				created_at: '2026-09-20T10:00:00Z',
+			},
+		])
+
+		renderPortal()
+
+		expect(await screen.findByText('humedad')).toBeInTheDocument()
+		expect(screen.getByText('Se moja la pared del pasillo')).toBeInTheDocument()
+		expect(screen.getByText('En progreso')).toBeInTheDocument()
+	})
+
+	it('traduce el estado del reclamo y no muestra el id interno de la unidad', async () => {
+		portalHome([
+			{
+				id: 'r1',
+				consorcio_id: 'c1',
+				unidad_id: 'unidad-uuid-12345678',
+				categoria: 'ruido',
+				estado: 'cerrado',
+				texto: 'Musica muy fuerte de noche',
+				created_at: '2026-09-01T10:00:00Z',
+			},
+		])
+
+		renderPortal()
+
+		expect(await screen.findByText('Cerrado')).toBeInTheDocument()
+		expect(screen.queryByText(/unidad-uuid/)).not.toBeInTheDocument()
+	})
+
+	it('invita a abrir un reclamo cuando no hay ninguno', async () => {
+		portalHome([])
+
+		renderPortal()
+
+		expect(await screen.findByText('Todavía no abriste ningún reclamo')).toBeInTheDocument()
+	})
 })

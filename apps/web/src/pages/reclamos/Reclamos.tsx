@@ -10,20 +10,13 @@ import { Badge, EmptyState, ErrorState, PageHeader, SkeletonRows } from '@/compo
 import {
 	accionesDisponibles,
 	etiquetaEstado,
+	toneEstado,
 	type Accion,
-	type EstadoReclamo,
 } from './estados'
 
 type Reclamo = components['schemas']['Reclamo']
 type ReclamoDetalle = components['schemas']['ReclamoDetalle']
 type Unidad = components['schemas']['Unidad']
-
-const TONE: Record<EstadoReclamo, 'blue' | 'amber' | 'green' | 'gray'> = {
-	abierto: 'blue',
-	en_progreso: 'amber',
-	resuelto: 'green',
-	cerrado: 'gray',
-}
 
 // El contrato de reclamos no incluye el nombre de la unidad, así que se resuelve
 // con el mismo endpoint que usa la pantalla de unidades (queryKey compartida).
@@ -135,7 +128,7 @@ function ReclamosInterno() {
 											{nombreUnidad(r.unidad_id)} · {formatFecha(r.created_at)}
 										</span>
 									</span>
-									<Badge tone={TONE[r.estado]}>{etiquetaEstado(r.estado)}</Badge>
+									<Badge tone={toneEstado(r.estado)}>{etiquetaEstado(r.estado)}</Badge>
 								</button>
 							</li>
 						))}
@@ -244,7 +237,7 @@ function Detalle({
 						{nombreUnidad(reclamo.unidad_id)} · abierto {formatFecha(reclamo.created_at)}
 					</p>
 				</div>
-				<Badge tone={TONE[reclamo.estado]}>{etiquetaEstado(reclamo.estado)}</Badge>
+				<Badge tone={toneEstado(reclamo.estado)}>{etiquetaEstado(reclamo.estado)}</Badge>
 			</header>
 
 			<div className="space-y-5 px-4 py-4">

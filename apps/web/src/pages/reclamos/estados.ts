@@ -37,6 +37,17 @@ export function etiquetaEstado(estado: EstadoReclamo): string {
 	return ETIQUETAS[estado] ?? estado
 }
 
+const TONES: Record<EstadoReclamo, 'blue' | 'amber' | 'green' | 'gray'> = {
+	abierto: 'blue',
+	en_progreso: 'amber',
+	resuelto: 'green',
+	cerrado: 'gray',
+}
+
+export function toneEstado(estado: EstadoReclamo): 'blue' | 'amber' | 'green' | 'gray' {
+	return TONES[estado] ?? 'gray'
+}
+
 export type AccionDisponible = {
 	accion: Accion
 	etiqueta: string
