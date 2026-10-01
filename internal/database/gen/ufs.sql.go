@@ -410,3 +410,47 @@ func (q *Queries) VinculoVigentePorPersona(ctx context.Context, arg VinculoVigen
 	err := row.Scan(&id)
 	return id, err
 }
+
+const listUnidadesForCurrentUser = `-- name: ListUnidadesForCurrentUser :many
+SELECT DISTINCT u.tenant_id, u.consorcio_id, u.id, u.codigo, u.tipo, u.superficie, u.coeficiente, u.estado, u.created_at, u.updated_at
+FROM unidades u
+JOIN personas p
+  ON p.tenant_id = u.tenant_id AND p.user_id = app.current_user_id()
+JOIN unidad_personas up
+  ON up.tenant_id = u.tenant_id AND up.unidad_id = u.id AND up.persona_id = p.id
+WHERE u.tenant_id = app.current_tenant_id()
+  AND up.valid_from <= CURRENT_DATE
+  AND (up.valid_to IS NULL OR up.valid_to >= CURRENT_DATE)
+ORDER BY u.codigo ASC, u.id ASC
+`
+
+func (q *Queries) ListUnidadesForCurrentUser(ctx context.Context) ([]Unidade, error) {
+	rows, err := q.db.Query(ctx, listUnidadesForCurrentUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Unidade{}
+	for rows.Next() {
+		var i Unidade
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.ConsorcioID,
+			&i.ID,
+			&i.Codigo,
+			&i.Tipo,
+			&i.Superficie,
+			&i.Coeficiente,
+			&i.Estado,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

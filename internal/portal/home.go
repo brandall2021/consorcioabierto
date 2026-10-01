@@ -59,6 +59,7 @@ type PortalHome struct {
 type Queryer interface {
 	ListConsorcios(context.Context, db.ListConsorciosParams) ([]db.Consorcio, error)
 	ListUnidades(context.Context, db.ListUnidadesParams) ([]db.Unidade, error)
+	ListUnidadesForCurrentUser(context.Context) ([]db.Unidade, error)
 	ListOpenChargesByUnidad(context.Context, db.ListOpenChargesByUnidadParams) ([]db.Charge, error)
 	ListComunicados(context.Context, db.ListComunicadosParams) ([]db.Comunicado, error)
 	ListReclamos(context.Context, db.ListReclamosParams) ([]db.Reclamo, error)
@@ -78,21 +79,47 @@ func BuildHome(ctx context.Context, q Queryer) (PortalHome, error) {
 		ComunicadosRecientes: []PortalComunicadoSummary{},
 		ReclamosRecientes:    []PortalReclamoSummary{},
 	}
+	// El portal es del consorcista: su alcance son las UFs con vinculo vigente.
+	// Antes se iteraban todos los consorcios y todas las unidades del tenant,
+	// por lo que cada consorcista veia reclamos y deuda de unidades ajenas.
+	misUnidades, err := q.ListUnidadesForCurrentUser(ctx)
+	if err != nil {
+		return PortalHome{}, err
+	}
+	unitIDs := make(map[string]struct{}, len(misUnidades))
+	unitsByConsorcio := make(map[string][]db.Unidade, len(misUnidades))
+	consorciosDeUsuario := make([]pgtype.UUID, 0, len(misUnidades))
+	seenConsorcio := make(map[string]struct{}, len(misUnidades))
+	for _, unit := range misUnidades {
+		unitIDs[unit.ID.String()] = struct{}{}
+		consorcioKey := unit.ConsorcioID.String()
+		unitsByConsorcio[consorcioKey] = append(unitsByConsorcio[consorcioKey], unit)
+		if _, ok := seenConsorcio[consorcioKey]; !ok {
+			seenConsorcio[consorcioKey] = struct{}{}
+			consorciosDeUsuario = append(consorciosDeUsuario, unit.ConsorcioID)
+		}
+	}
+	if len(misUnidades) == 0 {
+		return home, nil
+	}
+
+	consorciosPorID := make(map[string]db.Consorcio, len(consorcios))
 	for _, consorcio := range consorcios {
-		units, err := q.ListUnidades(ctx, db.ListUnidadesParams{ConsorcioID: consorcio.ID, Estado: ""})
-		if err != nil {
-			return PortalHome{}, err
+		consorciosPorID[consorcio.ID.String()] = consorcio
+	}
+	cutoff := todayUTC()
+	for _, consorcioID := range consorciosDeUsuario {
+		consorcio, ok := consorciosPorID[consorcioID.String()]
+		if !ok {
+			continue
 		}
-		unitIDs := make(map[string]struct{}, len(units))
-		for _, unit := range units {
-			unitIDs[unit.ID.String()] = struct{}{}
-		}
+		units := unitsByConsorcio[consorcioID.String()]
 
 		var saldoVencido int64
 		var cargosVencidos int64
 		var vencidoDesde string
 		for _, unit := range units {
-			charges, err := q.ListOpenChargesByUnidad(ctx, db.ListOpenChargesByUnidadParams{UnidadID: unit.ID, FechaCorte: todayUTC()})
+			charges, err := q.ListOpenChargesByUnidad(ctx, db.ListOpenChargesByUnidadParams{UnidadID: unit.ID, FechaCorte: cutoff})
 			if err != nil {
 				return PortalHome{}, err
 			}
@@ -120,6 +147,9 @@ func BuildHome(ctx context.Context, q Queryer) (PortalHome, error) {
 			return PortalHome{}, err
 		}
 		for _, payment := range payments {
+			if _, ok := unitIDs[payment.UnidadID.String()]; !ok {
+				continue
+			}
 			if payment.Estado != "acreditado" {
 				continue
 			}

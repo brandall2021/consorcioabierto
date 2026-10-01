@@ -90,3 +90,18 @@ INSERT INTO unidad_personas (tenant_id, unidad_id, persona_id, vinculo, porcenta
 VALUES (app.current_tenant_id(), sqlc.arg(unidad_id)::UUID, sqlc.arg(persona_id)::UUID,
         sqlc.arg(vinculo)::TEXT, sqlc.narg(porcentaje)::NUMERIC, sqlc.arg(valid_from)::DATE)
 RETURNING id;
+
+-- name: ListUnidadesForCurrentUser :many
+-- Unidades del usuario autenticado con vinculo vigente. Es el scope que el
+-- portal del consorcista usa: sin esta consulta el portal solo acotaba por
+-- tenant y cada consorcista veía todas las unidades.
+SELECT DISTINCT u.tenant_id, u.consorcio_id, u.id, u.codigo, u.tipo, u.superficie, u.coeficiente, u.estado, u.created_at, u.updated_at
+FROM unidades u
+JOIN personas p
+  ON p.tenant_id = u.tenant_id AND p.user_id = app.current_user_id()
+JOIN unidad_personas up
+  ON up.tenant_id = u.tenant_id AND up.unidad_id = u.id AND up.persona_id = p.id
+WHERE u.tenant_id = app.current_tenant_id()
+  AND up.valid_from <= CURRENT_DATE
+  AND (up.valid_to IS NULL OR up.valid_to >= CURRENT_DATE)
+ORDER BY u.codigo ASC, u.id ASC;
