@@ -48,8 +48,18 @@ type PortalReclamoSummary struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// PortalUnidadResumen identifica una unidad del usuario con vinculo vigente.
+// La UI la usa para elegir dónde abrir un reclamo; el servidor la vuelve a
+// validar al crear.
+type PortalUnidadResumen struct {
+	ID          string `json:"id"`
+	ConsorcioID string `json:"consorcio_id"`
+	Codigo      string `json:"codigo"`
+}
+
 type PortalHome struct {
 	Consorcios             []PortalConsorcioSummary  `json:"consorcios"`
+	Unidades               []PortalUnidadResumen     `json:"unidades"`
 	RecibosRecientes       []PortalReceiptSummary    `json:"recibos_recientes"`
 	ComunicadosRecientes   []PortalComunicadoSummary `json:"comunicados_recientes"`
 	ReclamosRecientes      []PortalReclamoSummary    `json:"reclamos_recientes"`
@@ -75,6 +85,7 @@ func BuildHome(ctx context.Context, q Queryer) (PortalHome, error) {
 
 	home := PortalHome{
 		Consorcios:           []PortalConsorcioSummary{},
+		Unidades:             []PortalUnidadResumen{},
 		RecibosRecientes:     []PortalReceiptSummary{},
 		ComunicadosRecientes: []PortalComunicadoSummary{},
 		ReclamosRecientes:    []PortalReclamoSummary{},
@@ -101,6 +112,13 @@ func BuildHome(ctx context.Context, q Queryer) (PortalHome, error) {
 	}
 	if len(misUnidades) == 0 {
 		return home, nil
+	}
+	for _, unit := range misUnidades {
+		home.Unidades = append(home.Unidades, PortalUnidadResumen{
+			ID:          unit.ID.String(),
+			ConsorcioID: unit.ConsorcioID.String(),
+			Codigo:      unit.Codigo,
+		})
 	}
 
 	consorciosPorID := make(map[string]db.Consorcio, len(consorcios))

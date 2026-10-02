@@ -286,10 +286,22 @@ components:
         created_at:
           type: string
           description: RFC3339 timestamp.
+    PortalUnidadResumen:
+      type: object
+      description: Unidad del usuario con vinculo vigente.
+      required: [id, consorcio_id, codigo]
+      properties:
+        id: { type: string, format: uuid }
+        consorcio_id: { type: string, format: uuid }
+        codigo: { type: string }
     PortalHome:
       type: object
-      required: [consorcios, recibos_recientes, comunicados_recientes, reclamos_recientes, total_saldo_vencido_cents]
+      required: [consorcios, unidades, recibos_recientes, comunicados_recientes, reclamos_recientes, total_saldo_vencido_cents]
       properties:
+        unidades:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortalUnidadResumen"
         consorcios:
           type: array
           items:
@@ -856,6 +868,39 @@ paths:
                         type: string
                         format: uuid
         "401": { $ref: "#/components/responses/Problem" }
+
+  /portal/reclamos:
+    post:
+      operationId: createPortalReclamo
+      tags: [auth]
+      description: >-
+        Alta de reclamo del consorcista desde el portal. El alcance lo decide el
+        servidor: la unidad debe tener vinculo vigente con el usuario y el
+        consorcio se deriva de esa unidad. No requiere permiso adicional.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unidad_id, categoria, texto]
+              properties:
+                unidad_id: { type: string, format: uuid }
+                categoria: { type: string }
+                texto: { type: string, minLength: 3 }
+      responses:
+        "201":
+          description: Reclamo creado.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestIdOut"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reclamo"
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
 
   /consorcios:
     get:

@@ -21,6 +21,7 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		authed.Get("/me", h.Me)
 		authed.Get("/memberships", h.Memberships)
 		authed.Get("/portal", h.GetPortalHome)
+		authed.Post("/portal/reclamos", h.CreatePortalReclamo)
 	})
 
 	r.Route("/audit-events", func(ar chi.Router) {

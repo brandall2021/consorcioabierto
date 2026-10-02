@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { client } from '@/api/client'
 import type { components } from '@/api/generated.d'
 import { useAuth } from '@/auth/AuthProvider'
@@ -10,6 +11,8 @@ type PortalResponse = { data: PortalHome }
 
 export function Portal() {
 	const { logout, me } = useAuth()
+	const [showForm, setShowForm] = useState(false)
+	const queryClient = useQueryClient()
 	const portalQuery = useQuery({
 		queryKey: ['portal-home'],
 		queryFn: async () => {
@@ -20,6 +23,7 @@ export function Portal() {
 	})
 
 	const home = portalQuery.data?.data
+	const unidades = home?.unidades ?? []
 
 	return (
 		<section className="space-y-6">
@@ -132,7 +136,35 @@ export function Portal() {
 					</div>
 
 					<section className="rounded-lg border bg-white p-4">
-						<h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Reclamos</h2>
+						<div className="flex flex-wrap items-center justify-between gap-2">
+							<h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Reclamos</h2>
+							{unidades.length > 0 && (
+								<button
+									type="button"
+									onClick={() => setShowForm((v) => !v)}
+									className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700"
+								>
+									{showForm ? 'Cancelar' : 'Abrir reclamo'}
+								</button>
+							)}
+						</div>
+
+						{showForm && unidades.length > 0 && (
+							<NuevoReclamo
+								unidades={unidades}
+								onCreated={() => {
+									setShowForm(false)
+									void queryClient.invalidateQueries({ queryKey: ['portal-home'] })
+								}}
+							/>
+						)}
+
+						{unidades.length === 0 && (
+							<p className="mt-3 text-sm text-gray-500">
+								No tenés unidades con vínculo vigente, así que todavía no podés abrir reclamos desde acá.
+							</p>
+						)}
+
 						{home.reclamos_recientes.length ? (
 							<ul className="mt-3 space-y-2">
 								{home.reclamos_recientes.map((reclamo) => (
@@ -156,7 +188,7 @@ export function Portal() {
 						) : (
 							<EmptyState
 								title="Todavía no abriste ningún reclamo"
-								description="Si tenés un problema en tu unidad, avisale al administración del consorcio."
+								description="Si tenés un problema en tu unidad, abrilo acá y seguí su estado."
 							/>
 						)}
 					</section>
@@ -167,6 +199,114 @@ export function Portal() {
 				<p className="text-sm text-gray-500">{me?.membership?.tenant_name ?? 'Tu portal'}</p>
 			)}
 		</section>
+	)
+}
+
+type UnidadResumen = components['schemas']['PortalUnidadResumen']
+
+const CATEGORIAS_SUGERIDAS = ['humedad', 'plomería', 'eléctrica', 'ascensor', 'seguridad', 'ruido']
+
+function NuevoReclamo({
+	unidades,
+	onCreated,
+}: {
+	unidades: UnidadResumen[]
+	onCreated: () => void
+}) {
+	const [unidadId, setUnidadId] = useState(unidades[0]?.id ?? '')
+	const [categoria, setCategoria] = useState('')
+	const [texto, setTexto] = useState('')
+
+	const crear = useMutation({
+		mutationFn: async () => {
+			const res = await client.POST('/portal/reclamos', {
+				body: { unidad_id: unidadId, categoria, texto },
+			})
+			if (res.error) {
+				throw new Error(
+					(res.error as { detail?: string }).detail ?? 'No se pudo abrir el reclamo',
+				)
+			}
+			return res.data
+		},
+		onSuccess: () => onCreated(),
+	})
+
+	const puedeEnviar = unidadId !== '' && categoria.trim() !== '' && texto.trim().length >= 3
+
+	return (
+		<form
+			className="mt-4 space-y-3 rounded-md border bg-gray-50 p-4"
+			onSubmit={(e) => {
+				e.preventDefault()
+				if (puedeEnviar) crear.mutate()
+			}}
+		>
+			<div>
+				<label htmlFor="reclamo-unidad" className="block text-sm font-medium">
+					Unidad
+				</label>
+				<select
+					id="reclamo-unidad"
+					value={unidadId}
+					onChange={(e) => setUnidadId(e.target.value)}
+					className="mt-1 w-full rounded-md border bg-white px-2 py-1.5 text-sm"
+				>
+					{unidades.map((u) => (
+						<option key={u.id} value={u.id}>
+							Unidad {u.codigo}
+						</option>
+					))}
+				</select>
+			</div>
+
+			<div>
+				<label htmlFor="reclamo-categoria" className="block text-sm font-medium">
+					Categoría
+				</label>
+				<input
+					id="reclamo-categoria"
+					list="reclamo-categorias"
+					value={categoria}
+					onChange={(e) => setCategoria(e.target.value)}
+					placeholder="humedad"
+					className="mt-1 w-full rounded-md border bg-white px-2 py-1.5 text-sm"
+				/>
+				<datalist id="reclamo-categorias">
+					{CATEGORIAS_SUGERIDAS.map((c) => (
+						<option key={c} value={c} />
+					))}
+				</datalist>
+			</div>
+
+			<div>
+				<label htmlFor="reclamo-texto" className="block text-sm font-medium">
+					¿Qué pasa?
+				</label>
+				<textarea
+					id="reclamo-texto"
+					value={texto}
+					onChange={(e) => setTexto(e.target.value)}
+					rows={3}
+					placeholder="Contale a la administración qué problema tenés."
+					className="mt-1 w-full rounded-md border bg-white px-2 py-1.5 text-sm"
+				/>
+			</div>
+
+			{crear.error && (
+				<p className="text-sm text-red-700" role="alert">
+					{crear.error instanceof Error ? crear.error.message : 'No se pudo abrir el reclamo'}
+				</p>
+			)}
+
+			<button
+				type="submit"
+				disabled={!puedeEnviar || crear.isPending}
+				className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				{crear.isPending ? 'Enviando…' : 'Enviar reclamo'}
+			</button>
+		</form>
 	)
 }
 

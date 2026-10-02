@@ -180,3 +180,29 @@ type sinVinculoQueryFake struct{ aislamientoQueryFake }
 func (f *sinVinculoQueryFake) ListUnidadesForCurrentUser(context.Context) ([]db.Unidade, error) {
 	return nil, nil
 }
+
+func TestBuildHomeListaSoloMisUnidades(t *testing.T) {
+	res, err := BuildHome(context.Background(), &aislamientoQueryFake{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Unidades) != 1 {
+		t.Fatalf("esperaba 1 unidad propia, obtuve %d: %+v", len(res.Unidades), res.Unidades)
+	}
+	if res.Unidades[0].ID != "aaaa1111-1111-4111-8111-111111111111" {
+		t.Fatalf("expuso una unidad ajena: %+v", res.Unidades[0])
+	}
+	if res.Unidades[0].Codigo != "1A" {
+		t.Fatalf("codigo de unidad inesperado: %+v", res.Unidades[0])
+	}
+}
+
+func TestBuildHomeSinVinculoNoListaUnidades(t *testing.T) {
+	res, err := BuildHome(context.Background(), &sinVinculoQueryFake{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(res.Unidades) != 0 {
+		t.Fatalf("usuario sin vinculo vio unidades: %+v", res.Unidades)
+	}
+}

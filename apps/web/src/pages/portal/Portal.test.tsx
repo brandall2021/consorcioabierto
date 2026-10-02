@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Portal } from './Portal'
 
 const portalGet = vi.fn()
+const portalPost = vi.fn()
 const logout = vi.fn()
 
 vi.mock('@/api/client', () => ({
@@ -11,6 +12,10 @@ vi.mock('@/api/client', () => ({
 		GET: (path: string) => {
 			if (path === '/portal') return portalGet()
 			throw new Error(`GET sin mock: ${path}`)
+		},
+		POST: (path: string, options?: unknown) => {
+			if (path === '/portal/reclamos') return portalPost(options)
+			throw new Error(`POST sin mock: ${path}`)
 		},
 	},
 }))
@@ -34,6 +39,7 @@ function renderPortal() {
 describe('Portal', () => {
 	beforeEach(() => {
 		portalGet.mockReset()
+		portalPost.mockReset()
 		logout.mockReset()
 	})
 
@@ -49,6 +55,7 @@ describe('Portal', () => {
 					],
 					comunicados_recientes: [],
 					reclamos_recientes: [],
+					unidades: [],
 					total_saldo_vencido_cents: 15000,
 				},
 			},
@@ -63,11 +70,12 @@ describe('Portal', () => {
 		expect(screen.getAllByText('Recibos recientes').length).toBeGreaterThan(0)
 	})
 
-	function portalHome(reclamos: unknown[]) {
+	function portalHome(reclamos: unknown[], unidades: unknown[] = []) {
 		portalGet.mockResolvedValue({
 			data: {
 				data: {
 					consorcios: [],
+					unidades,
 					recibos_recientes: [],
 					comunicados_recientes: [],
 					reclamos_recientes: reclamos,
@@ -123,5 +131,78 @@ describe('Portal', () => {
 		renderPortal()
 
 		expect(await screen.findByText('Todavía no abriste ningún reclamo')).toBeInTheDocument()
+	})
+	function portalConUnidad() {
+		portalGet.mockResolvedValue({
+			data: {
+				data: {
+					consorcios: [],
+					unidades: [{ id: 'u1', consorcio_id: 'c1', codigo: '1A' }],
+					recibos_recientes: [],
+					comunicados_recientes: [],
+					reclamos_recientes: [],
+					total_saldo_vencido_cents: 0,
+				},
+			},
+			error: undefined,
+		})
+	}
+
+	it('abre el formulario de reclamo cuando el usuario tiene unidades', async () => {
+		portalConUnidad()
+
+		renderPortal()
+
+		expect(await screen.findByRole('button', { name: 'Abrir reclamo' })).toBeInTheDocument()
+	})
+
+	it('envía el reclamo con la unidad resuelta y recarga el portal', async () => {
+		portalConUnidad()
+		portalPost.mockResolvedValue({
+			data: { id: 'r9', estado: 'abierto', categoria: 'humedad' },
+			error: undefined,
+		})
+
+		renderPortal()
+
+		fireEvent.click(await screen.findByRole('button', { name: 'Abrir reclamo' }))
+		fireEvent.change(await screen.findByLabelText('Categoría'), {
+			target: { value: 'humedad' },
+		})
+		fireEvent.change(screen.getByLabelText('¿Qué pasa?'), {
+			target: { value: 'Se moja la pared' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Enviar reclamo' }))
+
+		await waitFor(() => expect(portalPost).toHaveBeenCalledTimes(1))
+		expect(portalPost).toHaveBeenCalledWith({
+			body: { unidad_id: 'u1', categoria: 'humedad', texto: 'Se moja la pared' },
+		})
+	})
+
+	it('muestra el error del servidor cuando el vínculo no alcanza', async () => {
+		portalConUnidad()
+		portalPost.mockResolvedValue({
+			data: undefined,
+			error: { detail: 'no tenés un vínculo vigente con esa unidad' },
+		})
+
+		renderPortal()
+
+		fireEvent.click(await screen.findByRole('button', { name: 'Abrir reclamo' }))
+		fireEvent.change(await screen.findByLabelText('Categoría'), { target: { value: 'humedad' } })
+		fireEvent.change(screen.getByLabelText('¿Qué pasa?'), { target: { value: 'Prueba' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Enviar reclamo' }))
+
+		expect(await screen.findByRole('alert')).toHaveTextContent('vínculo vigente')
+	})
+
+	it('no ofrece abrir reclamo sin unidades con vínculo', async () => {
+		portalHome([])
+
+		renderPortal()
+
+		expect(await screen.findByText(/No tenés unidades con vínculo vigente/)).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: 'Abrir reclamo' })).not.toBeInTheDocument()
 	})
 })

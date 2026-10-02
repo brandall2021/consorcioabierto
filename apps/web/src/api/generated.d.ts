@@ -196,6 +196,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portal/reclamos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Alta de reclamo del consorcista desde el portal. El alcance lo decide el servidor: la unidad debe tener vinculo vigente con el usuario y el consorcio se deriva de esa unidad. No requiere permiso adicional. */
+        post: operations["createPortalReclamo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios": {
         parameters: {
             query?: never;
@@ -981,7 +998,16 @@ export interface components {
             /** @description RFC3339 timestamp. */
             created_at: string;
         };
+        /** @description Unidad del usuario con vinculo vigente. */
+        PortalUnidadResumen: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            consorcio_id: string;
+            codigo: string;
+        };
         PortalHome: {
+            unidades: components["schemas"]["PortalUnidadResumen"][];
             consorcios: components["schemas"]["PortalConsorcioSummary"][];
             recibos_recientes: components["schemas"]["PortalReceiptSummary"][];
             comunicados_recientes: components["schemas"]["PortalComunicadoSummary"][];
@@ -1615,6 +1641,39 @@ export interface operations {
                 };
             };
             401: components["responses"]["Problem"];
+        };
+    };
+    createPortalReclamo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    unidad_id: string;
+                    categoria: string;
+                    texto: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Reclamo creado. */
+            201: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestIdOut"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reclamo"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            403: components["responses"]["Problem"];
         };
     };
     listConsorcios: {
