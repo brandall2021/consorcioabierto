@@ -75,7 +75,7 @@ export function Unidades() {
           title="Unidades funcionales"
           description="UFs del consorcio, sus vínculos y la importación desde CSV."
           actions={
-            <PermissionGate permission="unidades.manage">
+            <PermissionGate permission="ufs.manage">
               <button
                 type="button"
                 onClick={() => setShowImport(true)}
