@@ -70,6 +70,20 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		})
 	})
 
+	// Miembros del tenant y vinculo persona <-> usuario: lectura con
+	// tenant.users.read, escritura con tenant.users.manage.
+	r.Route("/tenant", func(tr chi.Router) {
+		tr.Group(func(tmg chi.Router) {
+			tmg.Use(RequirePermission(h.Manager, "tenant.users.read"))
+			tmg.Get("/members", h.ListTenantMembers)
+		})
+		tr.Group(func(tmg chi.Router) {
+			tmg.Use(RequirePermission(h.Manager, "tenant.users.manage"))
+			tmg.Put("/personas/{personaId}/usuario", h.VincularPersonaUsuario)
+			tmg.Delete("/personas/{personaId}/usuario", h.DesvincularPersonaUsuario)
+		})
+	})
+
 	// Proveedores: lectura con proveedores.read, escritura con proveedores.manage.
 	r.Group(func(pr chi.Router) {
 		pr.Use(RequirePermission(h.Manager, "proveedores.read"))

@@ -47,6 +47,9 @@ type PersonaDTO struct {
 	Documento *string `json:"documento"`
 	Email     *string `json:"email"`
 	Telefono  *string `json:"telefono"`
+	// UserID es el usuario de la plataforma que representa a esta persona en el
+	// portal. Null cuando todavía no hay vínculo (operación tenant.users.manage).
+	UserID *string `json:"user_id"`
 }
 
 // PersonaVinculoDTO es un vínculo vigente con la persona resuelta.
@@ -391,6 +394,10 @@ func vinculoToDTO(v db.ListVinculosVigentesRow) PersonaVinculoDTO {
 	if v.Telefono.Valid {
 		s := v.Telefono.String
 		dto.Persona.Telefono = &s
+	}
+	if v.UserID.Valid {
+		s := v.UserID.String()
+		dto.Persona.UserID = &s
 	}
 	if v.Porcentaje.Valid {
 		s := numericToString(v.Porcentaje)

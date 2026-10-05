@@ -54,6 +54,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    PersonaId:
+      name: personaId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     ImportJobId:
       name: id
       in: path
@@ -415,6 +420,10 @@ components:
         documento: { type: [string, "null"] }
         email: { type: [string, "null"] }
         telefono: { type: [string, "null"] }
+        user_id:
+          type: [string, "null"]
+          format: uuid
+          description: Usuario de la plataforma que representa a esta persona; null si no hay vínculo
     PersonaVinculo:
       type: object
       required: [persona, vinculo]
@@ -556,6 +565,28 @@ components:
         categoria:
           type: string
           enum: [administracion, servicios, mantenimiento, fondos, otros]
+    TenantMember:
+      type: object
+      required: [user_id, email, nombre, membresia, estado]
+      properties:
+        user_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        nombre: { type: string }
+        membresia: { type: string }
+        estado: { type: string }
+    PersonaUsuario:
+      type: object
+      required: [id, nombre]
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        documento: { type: [string, "null"] }
+        email: { type: [string, "null"], format: email }
+        telefono: { type: [string, "null"] }
+        user_id:
+          type: [string, "null"]
+          format: uuid
+          description: Usuario de la plataforma que representa a esta persona; null si no hay vínculo
     Proveedor:
       type: object
       required: [id, cuit, razon_social, estado]
@@ -1301,6 +1332,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Gasto"
+  /tenant/members:
+    get:
+      operationId: listTenantMembers
+      tags: [personas]
+      summary: Miembros del tenant activo que se pueden vincular a una persona
+      responses:
+        "200":
+          description: Miembros del tenant activo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TenantMember" }
+                  meta:
+                    type: object
+                    required: [request_id]
+                    properties:
+                      request_id: { type: string, format: uuid }
+  /tenant/personas/{personaId}/usuario:
+    parameters:
+      - { $ref: "#/components/parameters/PersonaId" }
+    put:
+      operationId: vincularPersonaUsuario
+      tags: [personas]
+      summary: Vincula una persona con el usuario que la representa en el portal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario_id]
+              properties:
+                usuario_id: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Persona con su usuario vinculado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PersonaUsuario" }
+        "404":
+          description: La persona no existe en el tenant activo, o el usuario no es miembro de ese tenant
+    delete:
+      operationId: desvincularPersonaUsuario
+      tags: [personas]
+      summary: Quita el vínculo entre la persona y su usuario
+      responses:
+        "200":
+          description: Persona sin usuario vinculado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PersonaUsuario" }
+        "404":
+          description: La persona no existe en el tenant activo
   /consorcios/{id}/proveedores:
     parameters:
       - { $ref: "#/components/parameters/ConsorcioId" }

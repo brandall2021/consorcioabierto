@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Field, Select, TextInput } from '@/components/ui/Field'
 import { DocumentUpload } from '@/components/documentos/DocumentUpload'
 import { ImportWizard } from './ImportWizard'
+import { VincularUsuario } from './VincularUsuario'
 import { EmptyState, ErrorState, EstadoBadge, PageHeader, SkeletonRows } from '@/components/ui/primitives'
 
 type Unidad = components['schemas']['Unidad']
@@ -138,6 +139,7 @@ export function Unidades() {
                   <th className="px-3 py-2">Coeficiente</th>
                   <th className="px-3 py-2">Estado</th>
                   <th className="px-3 py-2">Personas</th>
+                  <th className="px-3 py-2">Portal</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -168,6 +170,17 @@ export function Unidades() {
                       ) : (
                         '—'
                       )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <PermissionGate permission="tenant.users.manage" fallback={null}>
+                        <ul className="space-y-1">
+                          {(u.personas ?? []).map((p, i) => (
+                            <li key={`${p.persona.id}-${i}`}>
+                              <VincularUsuario persona={p.persona} />
+                            </li>
+                          ))}
+                        </ul>
+                      </PermissionGate>
                     </td>
                   </tr>
                 ))}

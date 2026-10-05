@@ -439,3 +439,27 @@ type User struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	MfaSecret       pgtype.Text        `json:"mfa_secret"`
 }
+
+// ListTenantMembersRow es una fila de app.v_tenant_members (miembros del
+// tenant activo). Agregado a mano porque sqlc no genera sobre el schema app.
+type ListTenantMembersRow struct {
+	UserID           pgtype.UUID `json:"user_id"`
+	TenantID         pgtype.UUID `json:"tenant_id"`
+	MembershipStatus string      `json:"membership_status"`
+	EmailNormalized  string      `json:"email_normalized"`
+	Name             string      `json:"name"`
+	UserStatus       string      `json:"user_status"`
+}
+
+// PersonaVinculable es la persona tal como la devuelve GetPersonaForVinculo:
+// incluye user_id porque la operacion de admin necesita conocer el vinculo
+// vigente para no sobrescribirlo a ciegas.
+type PersonaVinculable struct {
+	ID        pgtype.UUID `json:"id"`
+	TenantID  pgtype.UUID `json:"tenant_id"`
+	Nombre    string      `json:"nombre"`
+	Documento pgtype.Text `json:"documento"`
+	Email     pgtype.Text `json:"email"`
+	Telefono  pgtype.Text `json:"telefono"`
+	UserID    pgtype.UUID `json:"user_id"`
+}

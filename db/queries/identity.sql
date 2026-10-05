@@ -69,3 +69,29 @@ UPDATE refresh_tokens SET revoked_at = $2 WHERE family_id = $1 AND revoked_at IS
 
 -- name: RevokeSession :exec
 UPDATE sessions SET revoked_at = $2 WHERE id = $1;
+
+-- name: ListTenantMembers :many
+-- Miembros del tenant activo para vincularlos a una persona. Usa la vista del
+-- owner porque la policy de memberships solo deja ver la membresia propia.
+SELECT user_id, tenant_id, membership_status, email_normalized, name, user_status
+FROM app.v_tenant_members
+ORDER BY name ASC;
+
+-- name: SetPersonaUsuario :exec
+-- Asocia una persona del tenant activo con un usuario. El indice unico
+-- parcial (tenant_id, user_id) hace que un usuario no se pueda vincular dos
+-- veces dentro del mismo tenant.
+UPDATE personas
+SET user_id = $2, updated_at = now()
+WHERE id = $1 AND tenant_id = app.current_tenant_id();
+
+-- name: UnsetPersonaUsuario :exec
+-- Desvincular es siempre explicito (user_id NULL) y no borra la persona.
+UPDATE personas
+SET user_id = NULL, updated_at = now()
+WHERE id = $1 AND tenant_id = app.current_tenant_id() AND user_id IS NOT NULL;
+
+-- name: GetPersonaForVinculo :one
+SELECT id, tenant_id, nombre, documento, email, telefono, user_id
+FROM personas
+WHERE id = $1 AND tenant_id = app.current_tenant_id();

@@ -505,6 +505,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tenant/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Miembros del tenant activo que se pueden vincular a una persona */
+        get: operations["listTenantMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tenant/personas/{personaId}/usuario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personaId: components["parameters"]["PersonaId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Vincula una persona con el usuario que la representa en el portal */
+        put: operations["vincularPersonaUsuario"];
+        post?: never;
+        /** Quita el vínculo entre la persona y su usuario */
+        delete: operations["desvincularPersonaUsuario"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios/{id}/proveedores": {
         parameters: {
             query?: never;
@@ -1082,6 +1119,11 @@ export interface components {
             documento?: string | null;
             email?: string | null;
             telefono?: string | null;
+            /**
+             * Format: uuid
+             * @description Usuario de la plataforma que representa a esta persona; null si no hay vínculo
+             */
+            user_id?: string | null;
         };
         PersonaVinculo: {
             persona: components["schemas"]["Persona"];
@@ -1220,6 +1262,29 @@ export interface components {
             /** @enum {string} */
             categoria: "administracion" | "servicios" | "mantenimiento" | "fondos" | "otros";
         };
+        TenantMember: {
+            /** Format: uuid */
+            user_id: string;
+            /** Format: email */
+            email: string;
+            nombre: string;
+            membresia: string;
+            estado: string;
+        };
+        PersonaUsuario: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            documento?: string | null;
+            /** Format: email */
+            email?: string | null;
+            telefono?: string | null;
+            /**
+             * Format: uuid
+             * @description Usuario de la plataforma que representa a esta persona; null si no hay vínculo
+             */
+            user_id?: string | null;
+        };
         Proveedor: {
             /** Format: uuid */
             id: string;
@@ -1340,6 +1405,7 @@ export interface components {
         IfMatch: string;
         ConsorcioId: string;
         UnidadId: string;
+        PersonaId: string;
         ImportJobId: string;
         LiquidacionId: string;
         CobranzaId: string;
@@ -2276,6 +2342,97 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Gasto"];
                 };
+            };
+        };
+    };
+    listTenantMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Miembros del tenant activo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TenantMember"][];
+                        meta: {
+                            /** Format: uuid */
+                            request_id: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    vincularPersonaUsuario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personaId: components["parameters"]["PersonaId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    usuario_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Persona con su usuario vinculado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaUsuario"];
+                };
+            };
+            /** @description La persona no existe en el tenant activo, o el usuario no es miembro de ese tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    desvincularPersonaUsuario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personaId: components["parameters"]["PersonaId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persona sin usuario vinculado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaUsuario"];
+                };
+            };
+            /** @description La persona no existe en el tenant activo */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

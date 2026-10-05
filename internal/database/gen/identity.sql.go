@@ -336,3 +336,84 @@ func (q *Queries) UpdateMfaSecret(ctx context.Context, arg UpdateMfaSecretParams
 	_, err := q.db.Exec(ctx, updateMfaSecret, arg.ID, arg.MfaSecret)
 	return err
 }
+
+const listTenantMembers = `-- name: ListTenantMembers :many
+SELECT user_id, tenant_id, membership_status, email_normalized, name, user_status
+FROM app.v_tenant_members
+ORDER BY name ASC
+`
+
+func (q *Queries) ListTenantMembers(ctx context.Context) ([]ListTenantMembersRow, error) {
+	rows, err := q.db.Query(ctx, listTenantMembers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTenantMembersRow
+	for rows.Next() {
+		var i ListTenantMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TenantID,
+			&i.MembershipStatus,
+			&i.EmailNormalized,
+			&i.Name,
+			&i.UserStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPersonaForVinculo = `-- name: GetPersonaForVinculo :one
+SELECT id, tenant_id, nombre, documento, email, telefono, user_id
+FROM personas
+WHERE id = $1 AND tenant_id = app.current_tenant_id()
+`
+
+func (q *Queries) GetPersonaForVinculo(ctx context.Context, id pgtype.UUID) (PersonaVinculable, error) {
+	row := q.db.QueryRow(ctx, getPersonaForVinculo, id)
+	var i PersonaVinculable
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Nombre,
+		&i.Documento,
+		&i.Email,
+		&i.Telefono,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const setPersonaUsuario = `-- name: SetPersonaUsuario :exec
+UPDATE personas
+SET user_id = $2, updated_at = now()
+WHERE id = $1 AND tenant_id = app.current_tenant_id()
+`
+
+func (q *Queries) SetPersonaUsuario(ctx context.Context, arg SetPersonaUsuarioParams) error {
+	_, err := q.db.Exec(ctx, setPersonaUsuario, arg.ID, arg.UserID)
+	return err
+}
+
+const unsetPersonaUsuario = `-- name: UnsetPersonaUsuario :exec
+UPDATE personas
+SET user_id = NULL, updated_at = now()
+WHERE id = $1 AND tenant_id = app.current_tenant_id() AND user_id IS NOT NULL
+`
+
+func (q *Queries) UnsetPersonaUsuario(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, unsetPersonaUsuario, id)
+	return err
+}
+
+type SetPersonaUsuarioParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}

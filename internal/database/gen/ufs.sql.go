@@ -288,7 +288,7 @@ func (q *Queries) ListUnidades(ctx context.Context, arg ListUnidadesParams) ([]U
 }
 
 const listVinculosVigentes = `-- name: ListVinculosVigentes :many
-SELECT p.id AS persona_id, p.nombre, p.documento, p.email, p.telefono,
+SELECT p.id AS persona_id, p.nombre, p.documento, p.email, p.telefono, p.user_id,
        up.vinculo, up.porcentaje, up.valid_from
 FROM unidad_personas up
 JOIN personas p ON p.tenant_id = up.tenant_id AND p.id = up.persona_id
@@ -304,6 +304,7 @@ type ListVinculosVigentesRow struct {
 	Documento  pgtype.Text    `json:"documento"`
 	Email      pgtype.Text    `json:"email"`
 	Telefono   pgtype.Text    `json:"telefono"`
+	UserID     pgtype.UUID    `json:"user_id"`
 	Vinculo    string         `json:"vinculo"`
 	Porcentaje pgtype.Numeric `json:"porcentaje"`
 	ValidFrom  pgtype.Date    `json:"valid_from"`
@@ -324,6 +325,7 @@ func (q *Queries) ListVinculosVigentes(ctx context.Context, unidadID pgtype.UUID
 			&i.Documento,
 			&i.Email,
 			&i.Telefono,
+			&i.UserID,
 			&i.Vinculo,
 			&i.Porcentaje,
 			&i.ValidFrom,
