@@ -254,6 +254,19 @@ type OutboxEvent struct {
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Notificacion struct {
+	TenantID     pgtype.UUID        `json:"tenant_id"`
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Tipo         string             `json:"tipo"`
+	Titulo       string             `json:"titulo"`
+	Cuerpo       string             `json:"cuerpo"`
+	RecursoType  string             `json:"recurso_type"`
+	RecursoID    pgtype.UUID        `json:"recurso_id"`
+	LeidaAt      pgtype.Timestamptz `json:"leida_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type Payment struct {
 	TenantID        pgtype.UUID        `json:"tenant_id"`
 	UnidadID        pgtype.UUID        `json:"unidad_id"`

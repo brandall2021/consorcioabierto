@@ -8,6 +8,7 @@ import (
 	"time"
 
 	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
+	"github.com/brandall2021/consorcioabierto/internal/notificaciones"
 	"github.com/brandall2021/consorcioabierto/internal/tenancy"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -34,6 +35,7 @@ type comunicadoPublicacionPayload struct {
 	ComunicadoID  string `json:"comunicado_id"`
 	ConsorcioID   string `json:"consorcio_id"`
 	Titulo        string `json:"titulo"`
+	Cuerpo        string `json:"cuerpo"`
 	Destinatarios int64  `json:"destinatarios"`
 }
 
@@ -85,7 +87,20 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 		if err := json.Unmarshal(event.Payload, &payload); err != nil {
 			return w.markFailed(ctx, tx, q, event, err)
 		}
-		w.Log.Info("comunicado publicado", "tenant_id", event.TenantID.String(), "comunicado_id", payload.ComunicadoID, "destinatarios", payload.Destinatarios)
+		// 5.2: al publicar, las notificaciones quedan encoladas; 6.2: el worker
+		// las envia. El fan-out es idempotente, asi que un reintento de este
+		// evento no duplica avisos.
+		res, err := notificaciones.NotificarComunicado(ctx, q, payload.ConsorcioID, payload.ComunicadoID, payload.Titulo, payload.Cuerpo)
+		if err != nil {
+			return w.markFailed(ctx, tx, q, event, err)
+		}
+		w.Log.Info("comunicado publicado",
+			"tenant_id", event.TenantID.String(),
+			"comunicado_id", payload.ComunicadoID,
+			"destinatarios", payload.Destinatarios,
+			"notificados", res.Destinatarios,
+			"notificaciones_creadas", res.Creadas,
+			"notificaciones_omitidas", res.Omitidas)
 	default:
 		return w.markFailed(ctx, tx, q, event, fmt.Errorf("evento outbox desconocido: %s", event.EventType))
 	}

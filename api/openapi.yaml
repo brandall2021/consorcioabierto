@@ -266,6 +266,28 @@ components:
         created_at:
           type: string
           description: RFC3339 timestamp.
+    Notificacion:
+      type: object
+      description: Aviso in-app para el consorcista, generado al publicar un comunicado.
+      required: [id, tipo, titulo, cuerpo, recurso_type, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tipo:
+          type: string
+          enum: [comunicado, liquidacion]
+        titulo: { type: string }
+        cuerpo: { type: string }
+        recurso_type: { type: string }
+        recurso_id:
+          type: string
+          format: uuid
+          nullable: true
+        leida_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+
     PortalComunicadoSummary:
       type: object
       required: [id, consorcio_id, consorcio_nombre, titulo, estado, publicado_at]
@@ -932,6 +954,78 @@ paths:
         "400": { $ref: "#/components/responses/Problem" }
         "401": { $ref: "#/components/responses/Problem" }
         "403": { $ref: "#/components/responses/Problem" }
+
+  /portal/notificaciones:
+    get:
+      operationId: listPortalNotificaciones
+      tags: [auth]
+      description: >-
+        Bandeja de notificaciones del usuario autenticado. El alcance lo impone la
+        policy de RLS (user_id = app.current_user_id()), asi que solo devuelve
+        las del propio usuario y no acepta un user_id del cliente. No requiere
+        permiso adicional.
+      parameters:
+        - name: solo_no_leidas
+          in: query
+          schema: { type: boolean, default: false }
+        - name: limite
+          in: query
+          description: Cantidad maxima de notificaciones. Valores no positivos usan el defecto (50) y los mayores al maximo se recortan a 200.
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Notificaciones del usuario, mas recientes primero.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestIdOut"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Notificacion" }
+                  meta:
+                    type: object
+                    required: [request_id, no_leidas]
+                    properties:
+                      request_id: { type: string }
+                      no_leidas:
+                        type: integer
+                        format: int64
+                        description: Notificaciones sin leer del usuario, para el badge del portal.
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+
+  /portal/notificaciones/{id}/leer:
+    post:
+      operationId: markPortalNotificacionLeida
+      tags: [auth]
+      description: >-
+        Marca una notificacion como leida. Idempotente: solo afecta filas con
+        leida_at IS NULL. Una notificacion de otro usuario es indistinguible de
+        una inexistente y responde 404. No requiere permiso adicional.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Notificacion marcada como leida.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestIdOut"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notificacion" }
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
 
   /consorcios:
     get:

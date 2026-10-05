@@ -117,10 +117,13 @@ func Publish(ctx context.Context, q Queryer, comunicadoID, idemKey string) (DTO,
 		if err != nil {
 			return DTO{}, err
 		}
+		// El cuerpo viaja en el payload porque el worker arma el aviso del
+		// consorcista y de este evento no puede volver a leer el comunicado.
 		payload, _ := json.Marshal(map[string]any{
 			"comunicado_id": row.ID.String(),
 			"consorcio_id":  row.ConsorcioID.String(),
 			"titulo":        row.Titulo,
+			"cuerpo":        row.Cuerpo,
 			"destinatarios": row.Destinatarios,
 		})
 		if _, err := q.InsertOutboxEvent(ctx, db.InsertOutboxEventParams{

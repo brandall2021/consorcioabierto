@@ -213,6 +213,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portal/notificaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Bandeja de notificaciones del usuario autenticado. El alcance lo impone la policy de RLS (user_id = app.current_user_id()), asi que solo devuelve las del propio usuario y no acepta un user_id del cliente. No requiere permiso adicional. */
+        get: operations["listPortalNotificaciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/notificaciones/{id}/leer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marca una notificacion como leida. Idempotente: solo afecta filas con leida_at IS NULL. Una notificacion de otro usuario es indistinguible de una inexistente y responde 404. No requiere permiso adicional. */
+        post: operations["markPortalNotificacionLeida"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/consorcios": {
         parameters: {
             query?: never;
@@ -1011,6 +1045,22 @@ export interface components {
             /** @description RFC3339 timestamp. */
             created_at: string;
         };
+        /** @description Aviso in-app para el consorcista, generado al publicar un comunicado. */
+        Notificacion: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "comunicado" | "liquidacion";
+            titulo: string;
+            cuerpo: string;
+            recurso_type: string;
+            /** Format: uuid */
+            recurso_id?: string | null;
+            /** Format: date-time */
+            leida_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         PortalComunicadoSummary: {
             /** Format: uuid */
             id: string;
@@ -1740,6 +1790,75 @@ export interface operations {
             400: components["responses"]["Problem"];
             401: components["responses"]["Problem"];
             403: components["responses"]["Problem"];
+        };
+    };
+    listPortalNotificaciones: {
+        parameters: {
+            query?: {
+                solo_no_leidas?: boolean;
+                /** @description Cantidad maxima de notificaciones. Valores no positivos usan el defecto (50) y los mayores al maximo se recortan a 200. */
+                limite?: number;
+            };
+            header?: {
+                /** @description ID idempotente de trazabilidad (se devuelve en respuesta). */
+                "X-Request-ID"?: components["parameters"]["RequestId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notificaciones del usuario, mas recientes primero. */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestIdOut"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Notificacion"][];
+                        meta: {
+                            request_id: string;
+                            /**
+                             * Format: int64
+                             * @description Notificaciones sin leer del usuario, para el badge del portal.
+                             */
+                            no_leidas: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+        };
+    };
+    markPortalNotificacionLeida: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ID idempotente de trazabilidad (se devuelve en respuesta). */
+                "X-Request-ID"?: components["parameters"]["RequestId"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notificacion marcada como leida. */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestIdOut"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notificacion"];
+                };
+            };
+            400: components["responses"]["Problem"];
+            401: components["responses"]["Problem"];
+            404: components["responses"]["Problem"];
         };
     };
     listConsorcios: {

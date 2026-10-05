@@ -5,6 +5,7 @@ import type { components } from '@/api/generated.d'
 import { useAuth } from '@/auth/AuthProvider'
 import { Badge, EmptyState, ErrorState, PageHeader, SkeletonRows } from '@/components/ui/primitives'
 import { etiquetaEstado, toneEstado, type EstadoReclamo } from '@/pages/reclamos/estados'
+import { Notificaciones } from '@/pages/portal/Notificaciones'
 
 type PortalHome = components['schemas']['PortalHome']
 type PortalResponse = { data: PortalHome }
@@ -113,6 +114,8 @@ export function Portal() {
 								<EmptyState title="Sin recibos recientes" description="Tus cobros acreditados van a aparecer acá." />
 							)}
 						</section>
+
+					<Notificaciones />
 
 					<section className="rounded-lg border bg-white p-4">
 						<h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Comunicados</h2>

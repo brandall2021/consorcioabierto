@@ -5,16 +5,20 @@ import { Portal } from './Portal'
 
 const portalGet = vi.fn()
 const portalPost = vi.fn()
+const notificacionesGet = vi.fn()
+const notificacionesPost = vi.fn()
 const logout = vi.fn()
 
 vi.mock('@/api/client', () => ({
 	client: {
 		GET: (path: string) => {
 			if (path === '/portal') return portalGet()
+			if (path === '/portal/notificaciones') return notificacionesGet()
 			throw new Error(`GET sin mock: ${path}`)
 		},
 		POST: (path: string, options?: unknown) => {
 			if (path === '/portal/reclamos') return portalPost(options)
+			if (path === '/portal/notificaciones/{id}/leer') return notificacionesPost(options)
 			throw new Error(`POST sin mock: ${path}`)
 		},
 	},
@@ -40,7 +44,10 @@ describe('Portal', () => {
 	beforeEach(() => {
 		portalGet.mockReset()
 		portalPost.mockReset()
+		notificacionesGet.mockReset()
+		notificacionesPost.mockReset()
 		logout.mockReset()
+		notificacionesGet.mockResolvedValue({ data: { data: [], meta: { request_id: 'r', no_leidas: 0 } } })
 	})
 
 	it('muestra el saldo vencido total y los recibos recientes', async () => {
