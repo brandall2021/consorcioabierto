@@ -68,6 +68,12 @@ export function ConsorcioLayout() {
             >
               Proveedores
             </NavLink>
+            <NavLink
+              to={`/app/consorcios/${consorcioId}/liquidaciones`}
+              className={tabClass}
+            >
+              Liquidaciones
+            </NavLink>
             {me?.permissions.includes('reclamos.read') && (
               <NavLink
                 to={`/app/consorcios/${consorcioId}/reclamos`}
@@ -76,6 +82,18 @@ export function ConsorcioLayout() {
                 Reclamos
               </NavLink>
             )}
+            <NavLink
+              to={`/app/consorcios/${consorcioId}/cuenta-corriente`}
+              className={tabClass}
+            >
+              Cuenta corriente
+            </NavLink>
+            <NavLink
+              to={`/app/consorcios/${consorcioId}/morosidad`}
+              className={tabClass}
+            >
+              Morosidad
+            </NavLink>
           </nav>
 
           <div className="mt-4">
