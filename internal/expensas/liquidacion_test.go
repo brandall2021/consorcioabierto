@@ -18,6 +18,7 @@ func TestValidTransitions(t *testing.T) {
 		{"confirmada", "publicada", true},
 		{"confirmada", "anulada", true},
 		{"publicada", "cerrada", true},
+		{"publicada", "anulada", false},
 		{"cerrada", "borrador", false},
 		{"anulada", "borrador", false},
 	}

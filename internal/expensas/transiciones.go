@@ -437,7 +437,7 @@ func AnularLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquidac
 	if err != nil {
 		return LiquidacionDTO{}, err
 	}
-	if liq.Estado == "anulada" || liq.Estado == "cerrada" {
+	if liq.Estado == "publicada" || liq.Estado == "anulada" || liq.Estado == "cerrada" {
 		return LiquidacionDTO{}, ErrLiquidacionTransicionInvalida
 	}
 
