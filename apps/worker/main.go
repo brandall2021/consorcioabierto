@@ -36,7 +36,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	w := &outbox.Worker{Log: log, Pool: pool, Queries: db.New(pool), Mail: &outbox.MockDriver{Log: log}, PDFGen: &outbox.SimplePDFGenerator{}}
+	mailDriver := outbox.MailDriver(&outbox.MockDriver{Log: log})
+	if cfg.MailDriver == "mailpit" {
+		mailDriver = &outbox.MailpitDriver{BaseURL: "http://localhost:8025"}
+	}
+
+	w := &outbox.Worker{Log: log, Pool: pool, Queries: db.New(pool), Mail: mailDriver, PDFGen: &outbox.SimplePDFGenerator{}}
 	go w.Run(ctx)
 	log.Info("worker iniciado", "env", cfg.Env)
 	<-ctx.Done()

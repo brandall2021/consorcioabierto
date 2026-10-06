@@ -119,6 +119,10 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 			"notificados", res.Destinatarios,
 			"notificaciones_creadas", res.Creadas,
 			"notificaciones_omitidas", res.Omitidas)
+	case EventPublished:
+		if err := w.processPublicacion(ctx, q, event); err != nil {
+			return w.markFailed(ctx, tx, q, event, err)
+		}
 	default:
 		return w.markFailed(ctx, tx, q, event, fmt.Errorf("evento outbox desconocido: %s", event.EventType))
 	}
@@ -127,6 +131,32 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (w *Worker) processPublicacion(ctx context.Context, q *db.Queries, event db.OutboxEvent) error {
+	var payload LiquidacionPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return fmt.Errorf("payload inválido: %w", err)
+	}
+
+	if w.PDFGen == nil {
+		return fmt.Errorf("outbox: PDF generator no configurado")
+	}
+	pdfBytes, err := w.PDFGen.Generate(payload)
+	if err != nil {
+		return fmt.Errorf("generar PDF: %w", err)
+	}
+	w.Log.Info("pdf generado",
+		"tenant_id", event.TenantID.String(),
+		"liquidacion_id", payload.LiquidacionID,
+		"bytes", len(pdfBytes))
+
+	// TODO(H3.6): enviar email a vínculos de UF
+	if w.Mail != nil {
+		w.Log.Info("email enviado (mock)", "liquidacion_id", payload.LiquidacionID)
+	}
+
+	return nil
 }
 
 func (w *Worker) markFailed(ctx context.Context, tx pgx.Tx, q *db.Queries, event db.OutboxEvent, cause error) error {
