@@ -51,3 +51,19 @@ SET estado = 'fallido',
     updated_at = now()
 WHERE tenant_id = app.current_tenant_id()
   AND id = sqlc.arg(id)::UUID;
+
+-- name: GetPendingOutboxEvents :many
+SELECT tenant_id, id, correlation_id, event_type, payload, estado, intentos, next_attempt_at, created_at
+FROM outbox_events
+WHERE estado = 'pendiente' AND next_attempt_at <= now()
+ORDER BY created_at ASC
+LIMIT sqlc.arg('batch_size')::INT;
+
+-- name: MarkOutboxProcessed :exec
+UPDATE outbox_events SET estado = 'procesado', intentos = intentos + 1
+WHERE tenant_id = app.current_tenant_id() AND id = sqlc.arg('id')::UUID;
+
+-- name: MarkOutboxFailed :exec
+UPDATE outbox_events
+SET estado = 'fallido', intentos = intentos + 1, next_attempt_at = now() + INTERVAL '1 minute' * power(2, intentos)
+WHERE tenant_id = app.current_tenant_id() AND id = sqlc.arg('id')::UUID;
