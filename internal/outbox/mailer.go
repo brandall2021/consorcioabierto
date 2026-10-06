@@ -8,26 +8,37 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
-func (m *MailpitDriver) Send(to, subject, body string) error {
-	payload := map[string]string{
-		"from":    "consorcioabierto@local",
-		"to":      to,
+// mailpitPayload arma el body de POST /api/v1/send según el schema de Mailpit:
+// from y to son objetos {name, email} / array de ellos, y el texto va en "text".
+func mailpitPayload(to, subject, body string) ([]byte, error) {
+	payload := map[string]any{
+		"from":    map[string]string{"email": "consorcioabierto@local"},
+		"to":      []map[string]string{{"email": to}},
 		"subject": subject,
-		"body":    body,
+		"text":    body,
 	}
-	data, err := json.Marshal(payload)
+	return json.Marshal(payload)
+}
+
+func (m *MailpitDriver) Send(to, subject, body string) error {
+	data, err := mailpitPayload(to, subject, body)
 	if err != nil {
 		return fmt.Errorf("mailpit marshal: %w", err)
 	}
-	resp, err := http.Post(m.BaseURL+"/api/v1/send", "application/json", bytes.NewReader(data))
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Post(m.BaseURL+"/api/v1/send", "application/json", bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("mailpit send: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("mailpit %d: read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("mailpit %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 	return nil
