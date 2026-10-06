@@ -15,6 +15,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	EventPublished           = "liquidacion.publicada"
+	EventComunicadoPublished = "comunicado.publicado"
+)
+
 type MailDriver interface{}
 
 type MockDriver struct{ Log *slog.Logger }
@@ -29,6 +34,12 @@ type Worker struct {
 	Queries *db.Queries
 	Mail    MailDriver
 	PDFGen  any
+}
+
+type LiquidacionPayload struct {
+	LiquidacionID string `json:"liquidacion_id"`
+	Periodo       string `json:"periodo"`
+	ConsorcioID   string `json:"consorcio_id"`
 }
 
 type comunicadoPublicacionPayload struct {
@@ -82,7 +93,7 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 	q := db.New(tx)
 
 	switch event.EventType {
-	case "comunicado.publicado":
+	case EventComunicadoPublished:
 		var payload comunicadoPublicacionPayload
 		if err := json.Unmarshal(event.Payload, &payload); err != nil {
 			return w.markFailed(ctx, tx, q, event, err)
