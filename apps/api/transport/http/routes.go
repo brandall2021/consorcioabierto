@@ -37,6 +37,7 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		cr.Get("/cobranzas/{id}", h.GetCobranza)
 		cr.Get("/cobranzas/{id}/recibo.pdf", h.GetCobranzaRecibo)
 		cr.Get("/consorcios/{id}/unidades/{unidadId}/cuenta-corriente", h.GetCuentaCorriente)
+		cr.Get("/consorcios/{id}/morosidad", h.GetMorosidad)
 		cr.Group(func(mgmt chi.Router) {
 			mgmt.Use(RequirePermission(h.Manager, "cobranzas.manage"))
 			mgmt.Post("/consorcios/{id}/cobranzas", h.CreateCobranza)
@@ -151,6 +152,29 @@ func RegisterAuthRoutes(r chi.Router, h *AuthHandlers) {
 		gr.Group(func(mgmt chi.Router) {
 			mgmt.Use(RequirePermission(h.Manager, "gastos.manage"))
 			mgmt.Post("/consorcios/{id}/gastos", h.CreateGasto)
+		})
+	})
+
+	// Liquidaciones: lectura con expensas.read, creación/cálculo con expensas.create,
+	// confirmar/anular con expensas.confirm y publicar con expensas.publish.
+	r.Group(func(lr chi.Router) {
+		lr.Use(RequirePermission(h.Manager, "expensas.read"))
+		lr.Get("/consorcios/{id}/liquidaciones", h.ListLiquidaciones)
+		lr.Get("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}", h.GetLiquidacion)
+		lr.Group(func(mgmt chi.Router) {
+			mgmt.Use(RequirePermission(h.Manager, "expensas.create"))
+			mgmt.Post("/consorcios/{id}/liquidaciones", h.CreateLiquidacion)
+			mgmt.Patch("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}", h.PatchLiquidacion)
+			mgmt.Post("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/calcular", h.CalcularLiquidacionHandler)
+		})
+		lr.Group(func(conf chi.Router) {
+			conf.Use(RequirePermission(h.Manager, "expensas.confirm"))
+			conf.Post("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/confirmar", h.ConfirmarLiquidacionHandler)
+			conf.Post("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/anular", h.AnularLiquidacionHandler)
+		})
+		lr.Group(func(pub chi.Router) {
+			pub.Use(RequirePermission(h.Manager, "expensas.publish"))
+			pub.Post("/consorcios/{consorcioId}/liquidaciones/{liquidacionId}/publicar", h.PublicarLiquidacionHandler)
 		})
 	})
 }
