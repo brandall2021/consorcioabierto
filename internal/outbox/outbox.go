@@ -20,7 +20,9 @@ const (
 	EventComunicadoPublished = "comunicado.publicado"
 )
 
-type MailDriver interface{}
+type MailDriver interface {
+	Send(to, subject, body string) error
+}
 
 type MockDriver struct{ Log *slog.Logger }
 
@@ -28,12 +30,17 @@ type MailpitDriver struct{ BaseURL string }
 
 type SimplePDFGenerator struct{}
 
+// PDFGenerator genera el PDF de una liquidación publicada.
+type PDFGenerator interface {
+	Generate(p LiquidacionPayload) ([]byte, error)
+}
+
 type Worker struct {
 	Log     *slog.Logger
 	Pool    *pgxpool.Pool
 	Queries *db.Queries
 	Mail    MailDriver
-	PDFGen  any
+	PDFGen  PDFGenerator
 }
 
 type LiquidacionPayload struct {
