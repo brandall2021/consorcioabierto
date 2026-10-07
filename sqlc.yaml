@@ -1,4 +1,9 @@
 version: "2"
+overrides:
+  go:
+    rename:
+      liquidacione: Liquidacion
+      liquidacion_unidade: LiquidacionUnidad
 sql:
   - engine: "postgresql"
     schema: "db/migrations"

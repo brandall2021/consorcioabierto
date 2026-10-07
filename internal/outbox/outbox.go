@@ -15,7 +15,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type MailDriver interface{}
+const (
+	EventPublished           = "liquidacion.publicada"
+	EventComunicadoPublished = "comunicado.publicado"
+)
+
+type MailDriver interface {
+	Send(to, subject, body string) error
+}
 
 type MockDriver struct{ Log *slog.Logger }
 
@@ -23,12 +30,23 @@ type MailpitDriver struct{ BaseURL string }
 
 type SimplePDFGenerator struct{}
 
+// PDFGenerator genera el PDF de una liquidación publicada.
+type PDFGenerator interface {
+	Generate(p LiquidacionPayload) ([]byte, error)
+}
+
 type Worker struct {
 	Log     *slog.Logger
 	Pool    *pgxpool.Pool
 	Queries *db.Queries
 	Mail    MailDriver
-	PDFGen  any
+	PDFGen  PDFGenerator
+}
+
+type LiquidacionPayload struct {
+	LiquidacionID string `json:"liquidacion_id"`
+	Periodo       string `json:"periodo"`
+	ConsorcioID   string `json:"consorcio_id"`
 }
 
 type comunicadoPublicacionPayload struct {
@@ -82,7 +100,7 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 	q := db.New(tx)
 
 	switch event.EventType {
-	case "comunicado.publicado":
+	case EventComunicadoPublished:
 		var payload comunicadoPublicacionPayload
 		if err := json.Unmarshal(event.Payload, &payload); err != nil {
 			return w.markFailed(ctx, tx, q, event, err)
@@ -101,6 +119,10 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 			"notificados", res.Destinatarios,
 			"notificaciones_creadas", res.Creadas,
 			"notificaciones_omitidas", res.Omitidas)
+	case EventPublished:
+		if err := w.processPublicacion(ctx, q, event); err != nil {
+			return w.markFailed(ctx, tx, q, event, err)
+		}
 	default:
 		return w.markFailed(ctx, tx, q, event, fmt.Errorf("evento outbox desconocido: %s", event.EventType))
 	}
@@ -109,6 +131,32 @@ func (w *Worker) process(ctx context.Context, event db.OutboxEvent) error {
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func (w *Worker) processPublicacion(ctx context.Context, q *db.Queries, event db.OutboxEvent) error {
+	var payload LiquidacionPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return fmt.Errorf("payload inválido: %w", err)
+	}
+
+	if w.PDFGen == nil {
+		return fmt.Errorf("outbox: PDF generator no configurado")
+	}
+	pdfBytes, err := w.PDFGen.Generate(payload)
+	if err != nil {
+		return fmt.Errorf("generar PDF: %w", err)
+	}
+	w.Log.Info("pdf generado",
+		"tenant_id", event.TenantID.String(),
+		"liquidacion_id", payload.LiquidacionID,
+		"bytes", len(pdfBytes))
+
+	// TODO(H3.6): enviar email a vínculos de UF
+	if w.Mail != nil {
+		w.Log.Info("email enviado (mock)", "liquidacion_id", payload.LiquidacionID)
+	}
+
+	return nil
 }
 
 func (w *Worker) markFailed(ctx context.Context, tx pgx.Tx, q *db.Queries, event db.OutboxEvent, cause error) error {
