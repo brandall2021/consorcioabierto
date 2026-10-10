@@ -268,7 +268,7 @@ components:
           description: RFC3339 timestamp.
     Notificacion:
       type: object
-      description: Aviso in-app para el consorcista, generado al publicar un comunicado.
+      description: Aviso in-app para el consorcista, generado al publicar un comunicado o una liquidación.
       required: [id, tipo, titulo, cuerpo, recurso_type, created_at]
       properties:
         id: { type: string, format: uuid }

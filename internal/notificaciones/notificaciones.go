@@ -2,8 +2,8 @@
 //
 // La spec pide que al publicar se encolen notificaciones (5.2) y que el worker
 // las envie (6.2). El fan-out lo hace el worker del outbox al procesar
-// "comunicado.publicado": la escritura es del servicio, la lectura es del
-// consorcista.
+// "comunicado.publicado" y "liquidacion.publicada": la escritura es del
+// servicio, la lectura es del consorcista.
 //
 // Reglas:
 //   - El destinatario nunca se acepta del cliente: se resuelve por
@@ -33,6 +33,10 @@ const (
 	TipoComunicado = "comunicado"
 	// RecursoComunicado identifica el recurso al que apunta el aviso.
 	RecursoComunicado = "comunicado"
+	// TipoLiquidacion es el aviso que genera publicar una liquidación.
+	TipoLiquidacion = "liquidacion"
+	// RecursoLiquidacion identifica el recurso al que apunta el aviso.
+	RecursoLiquidacion = "liquidacion"
 	// limitePorDefecto acota el listado del portal. El consorcista no necesita
 	// la tabla completa y el parametro viene del handler, no del cliente.
 	limitePorDefecto = 50
@@ -88,16 +92,29 @@ type Resultado struct {
 
 // NotificarComunicado crea el aviso de un comunicado publicado para cada
 // usuario con vinculo vigente a alguna UF del consorcio.
+func NotificarComunicado(ctx context.Context, q Queryer, consorcioID, comunicadoID, titulo, cuerpo string) (Resultado, error) {
+	return notificar(ctx, q, consorcioID, comunicadoID, TipoComunicado, RecursoComunicado, titulo, cuerpo)
+}
+
+// NotificarLiquidacion crea el aviso de una liquidación publicada para cada
+// usuario con vinculo vigente a alguna UF del consorcio.
+func NotificarLiquidacion(ctx context.Context, q Queryer, consorcioID, liquidacionID, titulo, cuerpo string) (Resultado, error) {
+	return notificar(ctx, q, consorcioID, liquidacionID, TipoLiquidacion, RecursoLiquidacion, titulo, cuerpo)
+}
+
+// notificar hace el fan-out de una publicacion. Comparten este camino los
+// comunicados y las liquidaciones: cambia el tipo de aviso y el recurso al que
+// apunta, no la resolucion del destinatario.
 //
 // Idempotente por (tenant, usuario, tipo, recurso): si el worker reintenta el
 // evento, las notificaciones ya creadas no se duplican y Creadas queda en 0.
 // Devuelve error solo ante un fallo real de base; un duplicado no es un fallo.
-func NotificarComunicado(ctx context.Context, q Queryer, consorcioID, comunicadoID, titulo, cuerpo string) (Resultado, error) {
+func notificar(ctx context.Context, q Queryer, consorcioID, recursoID, tipo, recursoType, titulo, cuerpo string) (Resultado, error) {
 	consorcio, err := uuidToPG(consorcioID)
 	if err != nil {
 		return Resultado{}, err
 	}
-	recurso, err := uuidToPG(comunicadoID)
+	recurso, err := uuidToPG(recursoID)
 	if err != nil {
 		return Resultado{}, err
 	}
@@ -114,10 +131,10 @@ func NotificarComunicado(ctx context.Context, q Queryer, consorcioID, comunicado
 	for _, usuario := range destinatarios {
 		_, err := q.InsertNotificacion(ctx, db.InsertNotificacionParams{
 			UserID:      usuario,
-			Tipo:        TipoComunicado,
+			Tipo:        tipo,
 			Titulo:      titulo,
 			Cuerpo:      cuerpo,
-			RecursoType: RecursoComunicado,
+			RecursoType: recursoType,
 			RecursoID:   recurso,
 		})
 		switch {

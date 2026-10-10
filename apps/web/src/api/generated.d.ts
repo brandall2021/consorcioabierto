@@ -1045,7 +1045,7 @@ export interface components {
             /** @description RFC3339 timestamp. */
             created_at: string;
         };
-        /** @description Aviso in-app para el consorcista, generado al publicar un comunicado. */
+        /** @description Aviso in-app para el consorcista, generado al publicar un comunicado o una liquidación. */
         Notificacion: {
             /** Format: uuid */
             id: string;

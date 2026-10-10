@@ -66,7 +66,7 @@ export function Notificaciones() {
 			)}
 
 			{query.data && items.length === 0 && (
-				<EmptyState title="Sin notificaciones" description="Cuando se publique un comunicado te va a llegar un aviso acá." />
+				<EmptyState title="Sin notificaciones" description="Cuando se publique un comunicado o una liquidación te va a llegar un aviso acá." />
 			)}
 
 			{items.length > 0 && (

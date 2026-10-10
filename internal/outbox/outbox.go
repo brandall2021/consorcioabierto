@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
@@ -151,12 +152,43 @@ func (w *Worker) processPublicacion(ctx context.Context, q *db.Queries, event db
 		"liquidacion_id", payload.LiquidacionID,
 		"bytes", len(pdfBytes))
 
+	// 5.2: al publicar, las notificaciones quedan encoladas; 6.2: el worker las
+	// envia. El fan-out es idempotente, asi que un reintento de este evento no
+	// duplica avisos.
+	res, err := notificaciones.NotificarLiquidacion(ctx, q, payload.ConsorcioID, payload.LiquidacionID, tituloLiquidacion(payload.Periodo), cuerpoLiquidacion(payload.Periodo))
+	if err != nil {
+		return fmt.Errorf("notificar liquidación: %w", err)
+	}
+	w.Log.Info("liquidacion publicada",
+		"tenant_id", event.TenantID.String(),
+		"liquidacion_id", payload.LiquidacionID,
+		"notificados", res.Destinatarios,
+		"notificaciones_creadas", res.Creadas,
+		"notificaciones_omitidas", res.Omitidas)
+
 	// TODO(H3.6): enviar email a vínculos de UF
 	if w.Mail != nil {
 		w.Log.Info("email enviado (mock)", "liquidacion_id", payload.LiquidacionID)
 	}
 
 	return nil
+}
+
+// tituloLiquidacion y cuerpoLiquidacion derivan el texto del aviso del periodo.
+// El payload no transporta titulo/cuerpo porque el worker los puede recomponer
+// de forma determinista; el texto no depende del cliente.
+func tituloLiquidacion(periodo string) string {
+	if p := strings.TrimSpace(periodo); p != "" {
+		return "Liquidación " + p
+	}
+	return "Liquidación publicada"
+}
+
+func cuerpoLiquidacion(periodo string) string {
+	if p := strings.TrimSpace(periodo); p != "" {
+		return fmt.Sprintf("Período %s. Ya está disponible en el portal.", p)
+	}
+	return "Ya está disponible en el portal."
 }
 
 func (w *Worker) markFailed(ctx context.Context, tx pgx.Tx, q *db.Queries, event db.OutboxEvent, cause error) error {

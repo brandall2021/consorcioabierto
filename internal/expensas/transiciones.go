@@ -353,7 +353,8 @@ func ConfirmarLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liqui
 }
 
 // PublicarLiquidacion encola el evento 'liquidacion.publicada' (lo consume el
-// worker de outbox para generar el PDF) y transiciona a 'publicada'.
+// worker de outbox para generar el PDF y avisar a los consorcistas) y
+// transiciona a 'publicada'.
 func PublicarLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquidacionID string, expectedVersion int, idemKey string) (LiquidacionDTO, error) {
 	var cid, lid pgtype.UUID
 	if err := cid.Scan(consorcioID); err != nil {

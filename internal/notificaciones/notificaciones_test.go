@@ -95,6 +95,36 @@ func TestNotificarComunicadoCreaUnaPorDestinatario(t *testing.T) {
 	}
 }
 
+func TestNotificarLiquidacionUsaTipoYRecursoPropios(t *testing.T) {
+	f := &fake{destinatarios: []pgtype.UUID{pgid(), pgid()}}
+	res, err := NotificarLiquidacion(context.Background(), f, uuid.NewString(), uuid.NewString(), "Liquidación 2026-09", "Período 2026-09.")
+	if err != nil {
+		t.Fatalf("no error: %v", err)
+	}
+	if res.Destinatarios != 2 || res.Creadas != 2 || res.Omitidas != 0 {
+		t.Fatalf("esperaba 2/2/0, obtuve %+v", res)
+	}
+	for _, ins := range f.insertados {
+		if ins.Tipo != TipoLiquidacion || ins.RecursoType != RecursoLiquidacion {
+			t.Fatalf("tipo/recurso inesperados: %+v", ins)
+		}
+		if ins.Titulo != "Liquidación 2026-09" {
+			t.Fatalf("titulo no propagado: %q", ins.Titulo)
+		}
+	}
+}
+
+func TestNotificarLiquidacionEsIdempotenteEnElReintento(t *testing.T) {
+	f := &fake{destinatarios: []pgtype.UUID{pgid()}, insertErr: pgx.ErrNoRows}
+	res, err := NotificarLiquidacion(context.Background(), f, uuid.NewString(), uuid.NewString(), "Titulo", "")
+	if err != nil {
+		t.Fatalf("un duplicado no debe ser error: %v", err)
+	}
+	if res.Creadas != 0 || res.Omitidas != 1 {
+		t.Fatalf("esperaba 0 creadas / 1 omitida, obtuve %+v", res)
+	}
+}
+
 func TestNotificarComunicadoEsIdempotenteEnElReintento(t *testing.T) {
 	// El worker reintenta los eventos fallidos; un duplicado por conflicto del
 	// indice unico no es error y no debe sumar Creadas.
