@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/brandall2021/consorcioabierto/internal/cuenta_corriente"
 	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
@@ -242,7 +243,7 @@ func CalcularLiquidacion(ctx context.Context, q *db.Queries, consorcioID, liquid
 		var unidad pgtype.UUID
 		_ = unidad.Scan(u.UnidadID)
 		var coef pgtype.Numeric
-		_ = coef.Scan(u.Coeficiente)
+		_ = coef.Scan(strconv.FormatFloat(u.Coeficiente, 'f', -1, 64))
 		if err := q.InsertLiquidacionUnidad(ctx, db.InsertLiquidacionUnidadParams{
 			LiquidacionID: lid,
 			UnidadID:      unidad,
