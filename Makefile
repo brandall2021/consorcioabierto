@@ -73,6 +73,9 @@ restore-db:    ## Restaura un backup SQL local con docker compose
 security-preflight: ## Revisa que la configuración de production no use drivers simulados
 	node scripts/ops/security-preflight.mjs
 
+go-live-checklist: ## Imprime la checklist de go-live / migración asistida
+	node scripts/ops/go-live-checklist.mjs
+
 ## ── Contrato ───────────────────────────────────────────────
 check-openapi: ## Valida el OpenAPI generando el cliente (falla si el contrato o el cliente quedan desactualizados)
 	cd apps/web && npm run generate:client
