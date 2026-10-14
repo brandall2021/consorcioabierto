@@ -104,7 +104,7 @@ export function Unidades() {
             <option value="inactiva">Inactiva</option>
           </Select>
         </label>
-        {isFetching && <span className="text-sm text-gray-400">Actualizando…</span>}
+        {isFetching && <span className="text-sm text-gray-500">Actualizando…</span>}
       </div>
 
       <div className="mt-4">
@@ -160,7 +160,7 @@ export function Unidades() {
                           {u.personas.map((p, i) => (
                             <li key={`${p.persona.id}-${i}`} className="text-xs">
                               {p.persona.nombre}{' '}
-                              <span className="text-gray-400">
+                              <span className="text-gray-500">
                                 · {vinculoLabel[p.vinculo] ?? p.vinculo}
                                 {p.porcentaje ? ` · ${p.porcentaje}%` : ''}
                               </span>
@@ -343,7 +343,7 @@ function VinculosEditor({
       </div>
 
       {vinculos.length === 0 && (
-        <p className="mt-1 text-xs text-gray-400">Sin vínculos. Agregá propietarios, inquilinos o apoderados.</p>
+        <p className="mt-1 text-xs text-gray-500">Sin vínculos. Agregá propietarios, inquilinos o apoderados.</p>
       )}
 
       <div className="mt-2 space-y-3">

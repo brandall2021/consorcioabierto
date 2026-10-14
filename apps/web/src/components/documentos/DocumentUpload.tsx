@@ -113,6 +113,7 @@ export function DocumentUpload({ tipo }: { tipo: string }) {
         <input
           ref={inputRef}
           type="file"
+          aria-label="Archivo a subir"
           className="block text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null

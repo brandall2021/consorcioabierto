@@ -86,7 +86,7 @@ export function Proveedores() {
             className="ml-2 inline-block w-auto"
           />
         </label>
-        {isFetching && <span className="text-sm text-gray-400">Actualizando…</span>}
+        {isFetching && <span className="text-sm text-gray-500">Actualizando…</span>}
       </div>
 
       <div className="mt-4">
@@ -144,7 +144,7 @@ export function Proveedores() {
                     <td className="px-3 py-2 text-gray-600">
                       {p.contacto_nombre ?? '—'}
                       {p.contacto_email && (
-                        <span className="text-gray-400"> · {p.contacto_email}</span>
+                        <span className="text-gray-500"> · {p.contacto_email}</span>
                       )}
                     </td>
                     <td className="px-3 py-2">

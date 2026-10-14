@@ -29,7 +29,7 @@ export function AppLayout() {
 
           {isEnabled('consorcios') && canReadConsorcios && (
             <>
-              <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-gray-400">
+              <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-gray-500">
                 Consorcios
               </p>
               <NavLink to="/app/consorcios" className={navLinkClass}>
@@ -39,7 +39,7 @@ export function AppLayout() {
           )}
 
           {isEnabled('administracion') && (
-            <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-gray-400">
+            <p className="px-3 pt-3 text-xs font-medium uppercase tracking-wide text-gray-500">
               Administración
             </p>
           )}
@@ -71,7 +71,7 @@ export function AppLayout() {
             Salir
           </button>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <main tabIndex={0} className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
       </div>

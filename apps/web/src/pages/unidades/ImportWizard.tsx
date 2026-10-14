@@ -143,6 +143,7 @@ export function ImportWizard({ open, onClose }: { open: boolean; onClose: () => 
             ref={fileInput}
             type="file"
             accept=".csv,text/csv"
+            aria-label="Archivo CSV de unidades"
             className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700"
             onChange={(e) => {
               setArchivo(e.target.files?.[0] ?? null)
@@ -199,11 +200,11 @@ export function ImportWizard({ open, onClose }: { open: boolean; onClose: () => 
 
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-md bg-gray-50 p-3">
-                  <dt className="text-xs uppercase tracking-wide text-gray-400">Filas</dt>
+                  <dt className="text-xs uppercase tracking-wide text-gray-500">Filas</dt>
                   <dd className="mt-1 font-medium">{jobActual.total_filas ?? '—'}</dd>
                 </div>
                 <div className="rounded-md bg-gray-50 p-3">
-                  <dt className="text-xs uppercase tracking-wide text-gray-400">Errores</dt>
+                  <dt className="text-xs uppercase tracking-wide text-gray-500">Errores</dt>
                   <dd className="mt-1 font-medium">{jobActual.errores?.length ?? 0}</dd>
                 </div>
               </dl>
@@ -297,15 +298,15 @@ export function ImportWizard({ open, onClose }: { open: boolean; onClose: () => 
             <p className="text-sm font-medium text-green-700">Importación completada.</p>
             <dl className="mt-3 grid grid-cols-3 gap-3 text-sm">
               <div className="rounded-md bg-gray-50 p-3">
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Creadas</dt>
+                <dt className="text-xs uppercase tracking-wide text-gray-500">Creadas</dt>
                 <dd className="mt-1 font-medium">{jobActual?.creados ?? 0}</dd>
               </div>
               <div className="rounded-md bg-gray-50 p-3">
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Actualizadas</dt>
+                <dt className="text-xs uppercase tracking-wide text-gray-500">Actualizadas</dt>
                 <dd className="mt-1 font-medium">{jobActual?.actualizados ?? 0}</dd>
               </div>
               <div className="rounded-md bg-gray-50 p-3">
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Rechazadas</dt>
+                <dt className="text-xs uppercase tracking-wide text-gray-500">Rechazadas</dt>
                 <dd className="mt-1 font-medium">{jobActual?.rechazados ?? 0}</dd>
               </div>
             </dl>

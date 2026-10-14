@@ -203,7 +203,7 @@ export function LiquidacionWizard() {
             >
               {patch.isPending ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            <span className="text-xs text-gray-400">Solo editable en borrador.</span>
+            <span className="text-xs text-gray-500">Solo editable en borrador.</span>
           </div>
         </form>
         {patch.error && <p className="mt-3 text-sm text-red-600">{patch.error.message}</p>}
@@ -286,7 +286,7 @@ export function LiquidacionWizard() {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
       <p className="mt-1 text-lg font-medium text-gray-900">{value}</p>
     </div>
   )

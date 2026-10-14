@@ -98,7 +98,7 @@ export function Liquidaciones() {
             <option value="anulada">Anulada</option>
           </Select>
         </label>
-        {isFetching && <span className="text-sm text-gray-400">Actualizando…</span>}
+        {isFetching && <span className="text-sm text-gray-500">Actualizando…</span>}
         <PermissionGate permission="expensas.create">
           <button
             type="button"

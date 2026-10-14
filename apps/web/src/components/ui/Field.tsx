@@ -19,7 +19,7 @@ export function Field({ label, error, hint, required, children }: FieldProps) {
       </label>
       {children(id)}
       {hint && !error && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-gray-400">
+        <p id={`${id}-hint`} className="mt-1 text-xs text-gray-500">
           {hint}
         </p>
       )}

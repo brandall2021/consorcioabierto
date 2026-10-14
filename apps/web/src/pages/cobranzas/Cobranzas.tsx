@@ -708,6 +708,7 @@ function ImportCobranzaForm({
 			<input
 				type="file"
 				accept=".csv,text/csv"
+				aria-label="Archivo CSV de cobranzas"
 				className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:text-gray-700"
 				onChange={(e) => setFile(e.target.files?.[0] ?? null)}
 			/>

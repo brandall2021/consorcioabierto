@@ -70,7 +70,7 @@ export function VincularUsuario({ persona }: { persona: Persona }) {
 				{persona.user_id ? (
 					<span className="text-green-700">Vinculada</span>
 				) : (
-					<span className="text-gray-400">Sin vincular</span>
+					<span className="text-gray-500">Sin vincular</span>
 				)}
 			</span>
 

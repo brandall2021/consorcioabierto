@@ -122,7 +122,7 @@ export function Consorcios() {
             <option value="inactivo">Inactivo</option>
           </select>
         </label>
-        {isFetching && <span className="text-sm text-gray-400">Actualizando…</span>}
+        {isFetching && <span className="text-sm text-gray-500">Actualizando…</span>}
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border bg-white">

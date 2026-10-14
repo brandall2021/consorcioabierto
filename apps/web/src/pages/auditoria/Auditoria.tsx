@@ -73,10 +73,15 @@ export function Auditoria() {
     <section>
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-medium">Auditoría</h1>
-        {isFetching && <span className="text-sm text-gray-400">Actualizando…</span>}
+        {isFetching && <span className="text-sm text-gray-500">Actualizando…</span>}
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label="Eventos de auditoría"
+        className="mt-4 overflow-x-auto rounded-lg border bg-white"
+      >
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
@@ -100,7 +105,7 @@ export function Auditoria() {
                 <td className="px-3 py-2 font-medium">{e.accion}</td>
                 <td className="px-3 py-2">
                   {e.recurso_type}
-                  {e.recurso_id ? <span className="text-gray-400"> · {e.recurso_id}</span> : null}
+                  {e.recurso_id ? <span className="text-gray-500"> · {e.recurso_id}</span> : null}
                 </td>
                 <td className="px-3 py-2 text-gray-500">{e.ip ?? '—'}</td>
               </tr>

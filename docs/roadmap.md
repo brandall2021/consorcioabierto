@@ -80,7 +80,8 @@ Portal consorcista, comunicaciones, reclamos, notificaciones y observabilidad.
 
 ## Fase 6 — Piloto y hardening
 
-- Carga, accesibilidad (Axe 360/768/1280/1440), backup/restore con RPO 24h/RTO 4h, seguridad, migración real asistida, soporte, checklist de go-live.
+- **H6.1 Accesibilidad (hecho, v1):** suite Playwright + `@axe-core/playwright` (WCAG 2.2 AA) a 360/768/1280/1440, job `frontend-e2e` en CI. Cubre 13 rutas (`/login`, `/app`, `/app/consorcios`, todas las del detalle de consorcio —unidades, proveedores, liquidaciones, wizard de liquidación, reclamos, cuenta corriente, morosidad—, `/app/auditoria`, `/app/perfil` y `/portal`) con API stubbeada; 52 tests verdes. Falta: portal con datos, modales/estados de error.
+- Pendiente: carga (k6), backup/restore RPO 24h/RTO 4h, seguridad, migración real asistida, soporte y checklist de go-live.
 
 ## Posteriores (requieren spec y threat model propios)
 

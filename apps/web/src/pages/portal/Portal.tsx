@@ -56,15 +56,15 @@ export function Portal() {
 				<div className="space-y-6">
 					<div className="grid gap-4 md:grid-cols-3">
 						<div className="rounded-lg border bg-white p-4">
-							<p className="text-xs font-medium uppercase tracking-wide text-gray-400">Saldo vencido total</p>
+							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">Saldo vencido total</p>
 							<p className="mt-2 text-2xl font-semibold">{formatMoney(home.total_saldo_vencido_cents)}</p>
 						</div>
 						<div className="rounded-lg border bg-white p-4">
-							<p className="text-xs font-medium uppercase tracking-wide text-gray-400">Consorcios</p>
+							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">Consorcios</p>
 							<p className="mt-2 text-2xl font-semibold">{home.consorcios.length}</p>
 						</div>
 						<div className="rounded-lg border bg-white p-4">
-							<p className="text-xs font-medium uppercase tracking-wide text-gray-400">Recibos recientes</p>
+							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">Recibos recientes</p>
 							<p className="mt-2 text-2xl font-semibold">{home.recibos_recientes.length}</p>
 						</div>
 					</div>

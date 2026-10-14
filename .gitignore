@@ -17,6 +17,12 @@ dist/
 *.tsbuildinfo
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # OS / editor
 .DS_Store
 Thumbs.db
