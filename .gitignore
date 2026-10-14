@@ -23,6 +23,9 @@ playwright-report/
 blob-report/
 .playwright/
 
+# Ops
+backups/
+
 # OS / editor
 .DS_Store
 Thumbs.db
