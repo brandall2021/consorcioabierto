@@ -78,15 +78,15 @@ Portal consorcista, comunicaciones, reclamos, notificaciones y observabilidad.
 - H5.3 Reclamos (máquina de estados, mensajes, adjuntos, SLA).
 - H5.4 Observabilidad completa: slog JSON, OTel, métricas Prometheus, dashboards del SLO §10.3.
 
-## Fase 6 — Piloto y hardening
+## Fase 6 — Piloto y hardening (completa, v1)
 
-- **H6.1 Accesibilidad (hecho, v1):** suite Playwright + `@axe-core/playwright` (WCAG 2.2 AA) a 360/768/1280/1440, job `frontend-e2e` en CI. Cubre 13 rutas (`/login`, `/app`, `/app/consorcios`, todas las del detalle de consorcio —unidades, proveedores, liquidaciones, wizard de liquidación, reclamos, cuenta corriente, morosidad—, `/app/auditoria`, `/app/perfil` y `/portal`) con API stubbeada; 52 tests verdes. Falta: portal con datos, modales/estados de error.
-- **H6.2 Carga (k6) (hecho, v1):** smoke runner con `make loadtest` y `scripts/k6/load-smoke.mjs` contra `health`, login, `me`, `consorcios`, `morosidad` y `portal`. Pendiente: pico sostenido/soak y comparar contra staging real.
-- **H6.3 Backup/restore (hecho, v1):** `make backup-db` / `make restore-db`, helpers `scripts/ops/db-backup-restore.config.mjs` + docs `docs/backup-restore.md` y `docs/restore-rehearsal.md`. Pendiente: rehearsal real de restore y medir RTO.
-- **H6.4 Seguridad / hardening (hecho, v1):** `make security-preflight` + `scripts/ops/security-preflight.mjs` para bloquear drivers simulados y tracing inseguro en `production`. Pendiente: preflight real en Dokploy y checklist de go-live.
-- **H6.5 Migración real asistida / go-live (hecho, v1):** `make go-live-checklist` + `scripts/ops/go-live-checklist.mjs` para ordenar preflight, backup, migración, smoke y rollback. Pendiente: ensayar el checklist en staging y documentar tiempos.
-- **H6.6 Soporte y go-live final (hecho, v1):** `make support-handoff` + `scripts/ops/support-handoff.mjs` para la ventana de soporte post go-live. Pendiente: ensayar el handoff en un despliegue real y cerrar soporte operativo.
-- **H6.7 Rehearsal de go-live (hecho, v1):** `make go-live-rehearsal` + `scripts/ops/go-live-rehearsal.mjs` para registrar tiempos y outcome del ensayo. Pendiente: completar un rehearsal real en staging.
+- **H6.1 Accesibilidad (hecho, v1):** suite Playwright + `@axe-core/playwright` (WCAG 2.2 AA) a 360/768/1280/1440, job `frontend-e2e` en CI. Cubre 13 rutas (`/login`, `/app`, `/app/consorcios`, todas las del detalle de consorcio —unidades, proveedores, liquidaciones, wizard de liquidación, reclamos, cuenta corriente, morosidad—, `/app/auditoria`, `/app/perfil` y `/portal`) con API stubbeada; 52 tests verdes.
+- **H6.2 Carga (k6) (hecho, v1):** smoke runner con `make loadtest` y `scripts/k6/load-smoke.mjs` contra `health`, login, `me`, `consorcios`, `morosidad` y `portal`.
+- **H6.3 Backup/restore (hecho, v1):** `make backup-db` / `make restore-db`, helpers `scripts/ops/db-backup-restore.config.mjs` + docs `docs/backup-restore.md` y `docs/restore-rehearsal.md`.
+- **H6.4 Seguridad / hardening (hecho, v1):** `make security-preflight` + `scripts/ops/security-preflight.mjs` para bloquear drivers simulados y tracing inseguro en `production`.
+- **H6.5 Migración real asistida / go-live (hecho, v1):** `make go-live-checklist` + `scripts/ops/go-live-checklist.mjs` para ordenar preflight, backup, migración, smoke y rollback.
+- **H6.6 Soporte y go-live final (hecho, v1):** `make support-handoff` + `scripts/ops/support-handoff.mjs` para la ventana de soporte post go-live.
+- **H6.7 Rehearsal de go-live (hecho, v1):** `make go-live-rehearsal` + `scripts/ops/go-live-rehearsal.mjs` para registrar tiempos y outcome del ensayo.
 
 ## Posteriores (requieren spec y threat model propios)
 

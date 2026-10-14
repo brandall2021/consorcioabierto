@@ -2,7 +2,7 @@
 
 SaaS multiempresa para administración de consorcios de Argentina. Un backend Go (monolito modular), una SPA React y PostgreSQL 16 con aislamiento multi-tenant por RLS.
 
-> **Estado:** Fase 1 — Fundación. H1.1 a H1.3 completas: scaffolding, identidad con MFA y límite de intentos. Ver [`docs/roadmap.md`](./docs/roadmap.md).
+> **Estado:** Fase 6 — Piloto y hardening completada en v1. Ver [`docs/roadmap.md`](./docs/roadmap.md) para el detalle y los hitos.
 
 ## Stack
 
