@@ -57,6 +57,13 @@ test-web:      ## Vitest + Testing Library
 e2e:           ## Playwright
 	cd apps/web && npm run test:e2e
 
+loadtest:      ## Smoke de carga con k6
+	docker run --rm -i \
+	  -e BASE_URL="$${BASE_URL:-http://127.0.0.1:8080}" \
+	  -e LOADTEST_EMAIL="$${LOADTEST_EMAIL:-admin@tenant-a.com}" \
+	  -e LOADTEST_PASSWORD="$${LOADTEST_PASSWORD:-Admin.123}" \
+	  grafana/k6:latest run - < scripts/k6/load-smoke.mjs
+
 ## ── Contrato ───────────────────────────────────────────────
 check-openapi: ## Valida el OpenAPI generando el cliente (falla si el contrato o el cliente quedan desactualizados)
 	cd apps/web && npm run generate:client
