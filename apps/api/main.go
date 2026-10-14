@@ -97,7 +97,7 @@ func main() {
 		go w.Run(ctx)
 	}
 
-	r := server.New(log, cfg.Env, identityManager, audit.New(pool), docsEnv, cobranzas.NewPSP(cfg.PSPDriver, cfg.BaseURL), cfg.MercadoPagoWebhookSecret)
+	r := server.New(log, cfg.Env, identityManager, audit.New(pool), docsEnv, cobranzas.NewPSP(cfg.PSPDriver, cfg.BaseURL, cfg.MercadoPagoAccessToken), cfg.MercadoPagoWebhookSecret)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           r,

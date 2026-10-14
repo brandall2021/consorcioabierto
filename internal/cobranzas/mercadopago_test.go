@@ -2,7 +2,10 @@ package cobranzas
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -14,7 +17,11 @@ import (
 
 func TestCreateMercadoPagoCobranzaBuildsCheckoutURL(t *testing.T) {
 	queries := db.New(&fakeMercadoPagoDBTX{})
-	psp := NewPSP("mercadopago", "https://app.example")
+	psp := stubPSP{result: CheckoutResult{
+		Provider:     "mercadopago",
+		PreferenceID: "pref-123",
+		CheckoutURL:  "https://mp.example/checkout/v1/redirect?pref_id=pref-123",
+	}}
 
 	res, err := CreateMercadoPagoCobranza(context.Background(), queries, "00000000-0000-0000-0000-000000000010", "00000000-0000-0000-0000-000000000020", CobranzaInput{
 		UnidadID: "00000000-0000-0000-0000-000000000030",
@@ -47,7 +54,20 @@ func TestNewPSPMercadoPagoAndMockAreDeterministic(t *testing.T) {
 		{name: "mock", driver: "mock", url: "https://app.example/api/v1/mock/checkout/"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			psp := NewPSP(tc.driver, "https://app.example")
+			psp := NewPSP(tc.driver, "https://app.example", "token-123")
+			if tc.driver == "mercadopago" {
+				mp, ok := psp.(MercadoPagoPSP)
+				if !ok {
+					t.Fatalf("expected MercadoPagoPSP, got %T", psp)
+				}
+				if mp.AppBaseURL != "https://app.example" {
+					t.Fatalf("unexpected app base url: %s", mp.AppBaseURL)
+				}
+				if mp.AccessToken != "token-123" {
+					t.Fatalf("unexpected access token: %s", mp.AccessToken)
+				}
+				return
+			}
 			res, err := psp.CreateCheckout(context.Background(), input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -60,6 +80,76 @@ func TestNewPSPMercadoPagoAndMockAreDeterministic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMercadoPagoPSPCreateCheckoutPostsPreferenceAndReturnsInitPoint(t *testing.T) {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/checkout/preferences" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer token-123" {
+			t.Fatalf("unexpected authorization header: %s", got)
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if got := body["external_reference"]; got != "payment-1" {
+			t.Fatalf("unexpected external_reference: %#v", got)
+		}
+		if got := body["notification_url"]; got != "https://app.example/api/v1/webhooks/mercado-pago" {
+			t.Fatalf("unexpected notification_url: %#v", got)
+		}
+		items, ok := body["items"].([]any)
+		if !ok || len(items) != 1 {
+			t.Fatalf("unexpected items: %#v", body["items"])
+		}
+		item, ok := items[0].(map[string]any)
+		if !ok {
+			t.Fatalf("unexpected item type: %#v", items[0])
+		}
+		if got := item["unit_price"]; got != 50.0 {
+			t.Fatalf("unexpected unit_price: %#v", got)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":         "pref-123",
+			"init_point": "https://mp.example/checkout/pref-123",
+		})
+	}))
+	defer server.Close()
+
+	psp := MercadoPagoPSP{APIBaseURL: server.URL, AppBaseURL: "https://app.example", AccessToken: "token-123", HTTPClient: server.Client()}
+	res, err := psp.CreateCheckout(context.Background(), CheckoutInput{
+		PaymentID:   "payment-1",
+		UnidadID:    "unit-1",
+		AmountCents: 5000,
+		Currency:    "ARS",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Provider != "mercadopago" {
+		t.Fatalf("unexpected provider: %s", res.Provider)
+	}
+	if res.PreferenceID != "pref-123" {
+		t.Fatalf("unexpected preference id: %s", res.PreferenceID)
+	}
+	if res.CheckoutURL != "https://mp.example/checkout/pref-123" {
+		t.Fatalf("unexpected checkout url: %s", res.CheckoutURL)
+	}
+}
+
+type stubPSP struct {
+	result CheckoutResult
+}
+
+func (s stubPSP) CreateCheckout(context.Context, CheckoutInput) (CheckoutResult, error) {
+	return s.result, nil
 }
 
 type fakeMercadoPagoDBTX struct{}
@@ -134,7 +224,7 @@ func stubNumeric(value string) pgtype.Numeric {
 }
 
 func TestCreateMercadoPagoCobranzaRejectsInvalidInput(t *testing.T) {
-	if _, err := CreateMercadoPagoCobranza(context.Background(), db.New(&fakeMercadoPagoDBTX{}), "bad", "user", CobranzaInput{}, "", NewPSP("mercadopago", "https://app.example")); !errors.Is(err, ErrCobranzaInvalid) {
+	if _, err := CreateMercadoPagoCobranza(context.Background(), db.New(&fakeMercadoPagoDBTX{}), "bad", "user", CobranzaInput{}, "", NewPSP("mercadopago", "https://app.example", "token-123")); !errors.Is(err, ErrCobranzaInvalid) {
 		t.Fatalf("expected ErrCobranzaInvalid, got %v", err)
 	}
 }

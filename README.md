@@ -195,9 +195,11 @@ MEMBERSHIP_CACHE_TTL=1m
 STORAGE_DRIVER=minio      # en producción debe ser s3 (no mock)
 MAIL_DRIVER=smtp          # en producción NO mailpit
 PSP_DRIVER=mock           # en producción decidir canal real
+MERCADO_PAGO_ACCESS_TOKEN=
+MERCADO_PAGO_WEBHOOK_SECRET=
 ```
 
-> En `APP_ENV=production` el arranque **falla** si `STORAGE_DRIVER`/`MAIL_DRIVER`/`PSP_DRIVER` contienen `mock`/`mailpit` (validación de `config.Validate`). No declarar los cambios sin esos drivers configurados.
+> En `APP_ENV=production` el arranque **falla** si `STORAGE_DRIVER`/`MAIL_DRIVER`/`PSP_DRIVER` contienen `mock`/`mailpit` (validación de `config.Validate`). Si `PSP_DRIVER=mercadopago`, también se exige `MERCADO_PAGO_ACCESS_TOKEN` y `MERCADO_PAGO_WEBHOOK_SECRET`.
 
 ### Variables de entorno del frontend (app `consorcioabierto-web`)
 

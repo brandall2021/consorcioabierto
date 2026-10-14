@@ -31,6 +31,7 @@ type Config struct {
 	StorageDriver            string
 	MailDriver               string
 	PSPDriver                string
+	MercadoPagoAccessToken   string
 	MercadoPagoWebhookSecret string
 
 	OTELExporter         string
@@ -68,6 +69,7 @@ func Load() (*Config, error) {
 		StorageDriver:            getenv("STORAGE_DRIVER", "minio"),
 		MailDriver:               getenv("MAIL_DRIVER", "mailpit"),
 		PSPDriver:                getenv("PSP_DRIVER", "mock"),
+		MercadoPagoAccessToken:   os.Getenv("MERCADO_PAGO_ACCESS_TOKEN"),
 		MercadoPagoWebhookSecret: os.Getenv("MERCADO_PAGO_WEBHOOK_SECRET"),
 		OTELExporter:             getenv("OTEL_EXPORTER", "console"),
 		OTELExporterEndpoint:     os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
@@ -103,6 +105,9 @@ func (c *Config) Validate() error {
 			if d.val == "mock" || d.val == "mailpit" || strings.Contains(d.val, "mock") {
 				return fmt.Errorf("%s=%q está prohibido en production", d.name, d.val)
 			}
+		}
+		if c.PSPDriver == "mercadopago" && strings.TrimSpace(c.MercadoPagoAccessToken) == "" {
+			return fmt.Errorf("MERCADO_PAGO_ACCESS_TOKEN es obligatoria cuando PSP_DRIVER=mercadopago")
 		}
 		if c.PSPDriver == "mercadopago" && strings.TrimSpace(c.MercadoPagoWebhookSecret) == "" {
 			return fmt.Errorf("MERCADO_PAGO_WEBHOOK_SECRET es obligatoria cuando PSP_DRIVER=mercadopago")

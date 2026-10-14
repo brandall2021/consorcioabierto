@@ -52,6 +52,8 @@ MAIL_FROM=
 
 # PSP (mock hasta decisión §15)
 PSP_DRIVER=mock
+MERCADO_PAGO_ACCESS_TOKEN=
+MERCADO_PAGO_WEBHOOK_SECRET=
 
 # Auditoría / observabilidad
 OTEL_EXPORTER=console            # console | otlp | none (ver docs/observability.md)

@@ -4,7 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	nethttp "net/http"
 	"strings"
 
 	db "github.com/brandall2021/consorcioabierto/internal/database/gen"
@@ -30,26 +34,118 @@ type PSP interface {
 	CreateCheckout(context.Context, CheckoutInput) (CheckoutResult, error)
 }
 
-func NewPSP(driver, baseURL string) PSP {
+func NewPSP(driver, baseURL, accessToken string) PSP {
 	switch strings.ToLower(strings.TrimSpace(driver)) {
 	case "mercadopago":
-		return MercadoPagoPSP{BaseURL: baseURL}
+		return MercadoPagoPSP{AppBaseURL: baseURL, AccessToken: accessToken}
 	default:
 		return MockPSP{BaseURL: baseURL}
 	}
 }
 
 type MercadoPagoPSP struct {
-	BaseURL string
+	AppBaseURL  string
+	APIBaseURL  string
+	AccessToken string
+	HTTPClient  HTTPDoer
 }
 
-func (p MercadoPagoPSP) CreateCheckout(_ context.Context, in CheckoutInput) (CheckoutResult, error) {
-	pref := preferenceID("mp", in)
-	return CheckoutResult{
-		Provider:     "mercadopago",
-		PreferenceID: pref,
-		CheckoutURL:  "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=" + pref,
-	}, nil
+type HTTPDoer interface {
+	Do(*nethttp.Request) (*nethttp.Response, error)
+}
+
+type mercadoPagoPreferenceRequest struct {
+	ExternalReference string            `json:"external_reference"`
+	NotificationURL   string            `json:"notification_url,omitempty"`
+	AutoReturn        string            `json:"auto_return,omitempty"`
+	Items             []mercadoPagoItem `json:"items"`
+	Metadata          map[string]string `json:"metadata,omitempty"`
+	BackURLs          map[string]string `json:"back_urls,omitempty"`
+	BinaryMode        bool              `json:"binary_mode,omitempty"`
+}
+
+type mercadoPagoItem struct {
+	Title     string  `json:"title"`
+	Quantity  int     `json:"quantity"`
+	Currency  string  `json:"currency_id"`
+	UnitPrice float64 `json:"unit_price"`
+}
+
+type mercadoPagoPreferenceResponse struct {
+	ID               string `json:"id"`
+	InitPoint        string `json:"init_point"`
+	SandboxInitPoint string `json:"sandbox_init_point"`
+}
+
+func (p MercadoPagoPSP) CreateCheckout(ctx context.Context, in CheckoutInput) (CheckoutResult, error) {
+	if strings.TrimSpace(p.AccessToken) == "" {
+		return CheckoutResult{}, errors.New("MERCADO_PAGO_ACCESS_TOKEN requerido")
+	}
+	client := p.HTTPClient
+	if client == nil {
+		client = nethttp.DefaultClient
+	}
+	apiBase := strings.TrimRight(strings.TrimSpace(p.APIBaseURL), "/")
+	if apiBase == "" {
+		apiBase = "https://api.mercadopago.com"
+	}
+	appBase := strings.TrimRight(strings.TrimSpace(p.AppBaseURL), "/")
+	prefReq := mercadoPagoPreferenceRequest{
+		ExternalReference: strings.TrimSpace(in.PaymentID),
+		NotificationURL:   appBase + "/api/v1/webhooks/mercado-pago",
+		AutoReturn:        "approved",
+		Items: []mercadoPagoItem{{
+			Title:     "ConsorcioAbierto - cobranza",
+			Quantity:  1,
+			Currency:  strings.ToUpper(strings.TrimSpace(in.Currency)),
+			UnitPrice: float64(in.AmountCents) / 100,
+		}},
+		Metadata: map[string]string{
+			"payment_id": strings.TrimSpace(in.PaymentID),
+			"unidad_id":  strings.TrimSpace(in.UnidadID),
+		},
+		BackURLs: map[string]string{
+			"success": appBase + "/app/consorcios",
+			"pending": appBase + "/app/consorcios",
+			"failure": appBase + "/app/consorcios",
+		},
+		BinaryMode: true,
+	}
+	body, err := json.Marshal(prefReq)
+	if err != nil {
+		return CheckoutResult{}, err
+	}
+	req, err := nethttp.NewRequestWithContext(ctx, nethttp.MethodPost, apiBase+"/checkout/preferences", strings.NewReader(string(body)))
+	if err != nil {
+		return CheckoutResult{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(p.AccessToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return CheckoutResult{}, err
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return CheckoutResult{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return CheckoutResult{}, fmt.Errorf("mercado pago create preference: status %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+	var out mercadoPagoPreferenceResponse
+	if err := json.Unmarshal(respBody, &out); err != nil {
+		return CheckoutResult{}, err
+	}
+	checkoutURL := strings.TrimSpace(out.InitPoint)
+	if checkoutURL == "" {
+		checkoutURL = strings.TrimSpace(out.SandboxInitPoint)
+	}
+	if checkoutURL == "" {
+		return CheckoutResult{}, errors.New("mercado pago checkout_url ausente")
+	}
+	return CheckoutResult{Provider: "mercadopago", PreferenceID: strings.TrimSpace(out.ID), CheckoutURL: checkoutURL}, nil
 }
 
 type MockPSP struct {

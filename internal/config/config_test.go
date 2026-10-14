@@ -12,6 +12,7 @@ func baseConfig() *Config {
 		StorageDriver:            "s3",
 		MailDriver:               "smtp",
 		PSPDriver:                "mercadopago",
+		MercadoPagoAccessToken:   "token",
 		MercadoPagoWebhookSecret: "secret",
 	}
 }
@@ -33,6 +34,7 @@ func TestValidateProductionRechazaDriversSimulados(t *testing.T) {
 		{"psp mock", func(c *Config) { c.PSPDriver = "mock" }},
 		{"storage mock", func(c *Config) { c.StorageDriver = "mock" }},
 		{"mail mailpit", func(c *Config) { c.MailDriver = "mailpit" }},
+		{"mercado pago sin token", func(c *Config) { c.MercadoPagoAccessToken = "" }},
 		{"mercado pago sin secret", func(c *Config) { c.MercadoPagoWebhookSecret = "" }},
 	}
 	for _, tc := range cases {
