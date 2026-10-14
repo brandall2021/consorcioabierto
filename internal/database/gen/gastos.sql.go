@@ -96,7 +96,7 @@ FROM gastos
 WHERE tenant_id = app.current_tenant_id()
   AND consorcio_id = $1::UUID
   AND ($2::TEXT = '' OR to_char(fecha, 'YYYY-MM') = $2::TEXT)
-  AND proveedor_id = COALESCE($3::UUID, proveedor_id)
+  AND ($3::UUID IS NULL OR proveedor_id = $3::UUID)
 ORDER BY fecha DESC, created_at DESC, id DESC
 `
 

@@ -4,7 +4,7 @@ FROM gastos
 WHERE tenant_id = app.current_tenant_id()
   AND consorcio_id = sqlc.arg('consorcio_id')::UUID
   AND (sqlc.arg('mes')::TEXT = '' OR to_char(fecha, 'YYYY-MM') = sqlc.arg('mes')::TEXT)
-  AND proveedor_id = COALESCE(sqlc.narg('proveedor_id')::UUID, proveedor_id)
+  AND (sqlc.narg('proveedor_id')::UUID IS NULL OR proveedor_id = sqlc.narg('proveedor_id')::UUID)
 ORDER BY fecha DESC, created_at DESC, id DESC;
 
 -- name: GetGasto :one
