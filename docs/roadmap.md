@@ -86,6 +86,7 @@ Portal consorcista, comunicaciones, reclamos, notificaciones y observabilidad.
 - **H6.4 Seguridad / hardening (hecho, v1):** `make security-preflight` + `scripts/ops/security-preflight.mjs` para bloquear drivers simulados y tracing inseguro en `production`. Pendiente: preflight real en Dokploy y checklist de go-live.
 - **H6.5 Migración real asistida / go-live (hecho, v1):** `make go-live-checklist` + `scripts/ops/go-live-checklist.mjs` para ordenar preflight, backup, migración, smoke y rollback. Pendiente: ensayar el checklist en staging y documentar tiempos.
 - **H6.6 Soporte y go-live final (hecho, v1):** `make support-handoff` + `scripts/ops/support-handoff.mjs` para la ventana de soporte post go-live. Pendiente: ensayar el handoff en un despliegue real y cerrar soporte operativo.
+- **H6.7 Rehearsal de go-live (hecho, v1):** `make go-live-rehearsal` + `scripts/ops/go-live-rehearsal.mjs` para registrar tiempos y outcome del ensayo. Pendiente: completar un rehearsal real en staging.
 
 ## Posteriores (requieren spec y threat model propios)
 

@@ -79,6 +79,9 @@ go-live-checklist: ## Imprime la checklist de go-live / migración asistida
 support-handoff: ## Imprime la checklist de soporte post go-live
 	node scripts/ops/support-handoff.mjs
 
+go-live-rehearsal: ## Imprime un reporte de rehearsal de go-live
+	node scripts/ops/go-live-rehearsal.mjs
+
 ## ── Contrato ───────────────────────────────────────────────
 check-openapi: ## Valida el OpenAPI generando el cliente (falla si el contrato o el cliente quedan desactualizados)
 	cd apps/web && npm run generate:client
