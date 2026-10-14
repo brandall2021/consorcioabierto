@@ -83,6 +83,7 @@ Portal consorcista, comunicaciones, reclamos, notificaciones y observabilidad.
 - **H6.1 Accesibilidad (hecho, v1):** suite Playwright + `@axe-core/playwright` (WCAG 2.2 AA) a 360/768/1280/1440, job `frontend-e2e` en CI. Cubre 13 rutas (`/login`, `/app`, `/app/consorcios`, todas las del detalle de consorcio —unidades, proveedores, liquidaciones, wizard de liquidación, reclamos, cuenta corriente, morosidad—, `/app/auditoria`, `/app/perfil` y `/portal`) con API stubbeada; 52 tests verdes. Falta: portal con datos, modales/estados de error.
 - **H6.2 Carga (k6) (hecho, v1):** smoke runner con `make loadtest` y `scripts/k6/load-smoke.mjs` contra `health`, login, `me`, `consorcios`, `morosidad` y `portal`. Pendiente: pico sostenido/soak y comparar contra staging real.
 - **H6.3 Backup/restore (hecho, v1):** `make backup-db` / `make restore-db`, helpers `scripts/ops/db-backup-restore.config.mjs` + docs `docs/backup-restore.md` y `docs/restore-rehearsal.md`. Pendiente: rehearsal real de restore y medir RTO.
+- **H6.4 Seguridad / hardening (hecho, v1):** `make security-preflight` + `scripts/ops/security-preflight.mjs` para bloquear drivers simulados y tracing inseguro en `production`. Pendiente: preflight real en Dokploy y checklist de go-live.
 
 ## Posteriores (requieren spec y threat model propios)
 

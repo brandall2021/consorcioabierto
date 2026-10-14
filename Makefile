@@ -70,6 +70,9 @@ backup-db:     ## Genera un backup SQL local con docker compose
 restore-db:    ## Restaura un backup SQL local con docker compose
 	node scripts/ops/restore-db.mjs $(BACKUP_FILE) $(if $(DRY_RUN),--dry-run,)
 
+security-preflight: ## Revisa que la configuración de production no use drivers simulados
+	node scripts/ops/security-preflight.mjs
+
 ## ── Contrato ───────────────────────────────────────────────
 check-openapi: ## Valida el OpenAPI generando el cliente (falla si el contrato o el cliente quedan desactualizados)
 	cd apps/web && npm run generate:client
